@@ -27,8 +27,6 @@ import com.google.common.collect.Multimap;
  */
 public class ModelBuilder {
 
-    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(getClass());
-
     private final Multimap<Class<?>, Function<?, ?>> idExtractors = HashMultimap.create();
 
     private final Map<Function<?, ?>, Class<?>> functionValueMap = new HashMap<>();
@@ -41,7 +39,6 @@ public class ModelBuilder {
         BuildContext finalBuildContext = new DefaultBuildContextImpl();
 
         while (!sources.isEmpty()) {
-            logger.debug("building:{}", sources);
             BuildContext thisBuildContext = new DefaultBuildContextImpl();
             Set<?> newSources = new HashSet<>();
             for (Object t : sources) {
@@ -78,7 +75,6 @@ public class ModelBuilder {
 
             finalBuildContext.merge(thisBuildContext);
             sources = newSources;
-            logger.debug("buildcontext:{}", thisBuildContext);
         }
         return finalBuildContext;
     }
