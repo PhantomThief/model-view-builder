@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
-import me.vela.model.builder.annotation.ValueType;
 import me.vela.model.builder.context.BuildContext;
 import me.vela.model.builder.context.impl.DefaultBuildContextImpl;
 
@@ -29,10 +28,12 @@ public class ModelBuilder {
 
     private final Multimap<Class<?>, Function<?, ?>> idExtractors = HashMultimap.create();
 
-    private final Map<Function<?, ?>, Class<?>> functionValueMap = new HashMap<>();
+    private final Map<Function<?, ?>, String> functionValueMap = new HashMap<>();
 
-    private final Multimap<Class<?>, Function<Collection<?>, Map<?, ?>>> dataBuilders = HashMultimap
+    private final Multimap<String, Function<Collection<?>, Map<?, ?>>> dataBuilders = HashMultimap
             .create();
+
+    private final Map<Function<?, ?>, String> buildToMap = new HashMap<>();
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public BuildContext build(Collection<?> sources) {
@@ -50,8 +51,8 @@ public class ModelBuilder {
                     if (id == null) {
                         continue;
                     }
-                    Class<?> valueMap = getValueMap(idExtractor);
-                    if (finalBuildContext.getIds(valueMap).contains(id)) {
+                    String valueMap = functionValueMap.get((Function<?, ?>) idExtractor);
+                    if (valueMap != null && finalBuildContext.getIds(valueMap).contains(id)) {
                         continue;
                     }
 
@@ -62,14 +63,20 @@ public class ModelBuilder {
                     }
                 }
 
-                // 构建数据
-                for (Class<?> valueType : thisBuildContext.allValueTypes()) {
-                    for (Function<Collection<?>, Map<?, ?>> dataBuilder : dataBuilders
-                            .get(valueType)) {
-                        Map values = dataBuilder.apply(thisBuildContext.getIds(valueType));
-                        thisBuildContext.putDatas(valueType, values);
-                        newSources.addAll(values.values());
+            }
+
+            // 构建数据
+            for (String valueType : thisBuildContext.allValueTypes()) {
+                for (Function<Collection<?>, Map<?, ?>> dataBuilder : dataBuilders.get(valueType)) {
+
+                    Set<Object> thisIds = thisBuildContext.getIds(valueType);
+                    Map values = dataBuilder.apply(thisIds);
+                    String toValueType = buildToMap.get(dataBuilder);
+                    if (toValueType == null) {
+                        toValueType = valueType;
                     }
+                    thisBuildContext.putDatas(toValueType, values);
+                    newSources.addAll(values.values());
                 }
             }
 
@@ -102,27 +109,39 @@ public class ModelBuilder {
 
     public <E> ModelBuilder addIdExtractor(Class<E> type, Function<E, ?> idExtractor,
             Class<?> valueType) {
+        return addIdExtractor(type, idExtractor, valueType.getName());
+    }
+
+    public <E> ModelBuilder addIdExtractor(Class<E> type, Function<E, ?> idExtractor,
+            String valueType) {
         addIdExtractor(type, idExtractor);
         functionValueMap.put(idExtractor, valueType);
         return this;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public <E, K, V> ModelBuilder addDataBuilder(Class<E> type,
+            Function<Collection<K>, Map<K, V>> dataBuilder) {
+        return addDataBuilder(type.getName(), dataBuilder);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <E, K, V> ModelBuilder addDataBuilder(String type,
             Function<Collection<K>, Map<K, V>> dataBuilder) {
         ((Multimap) dataBuilders).put(type, dataBuilder);
         return this;
     }
 
-    private Class<?> getValueMap(Function<?, ?> function) {
-        Class<?> valueType = functionValueMap.get(function);
-        if (valueType == null) {
-            ValueType annotation = function.getClass().getAnnotation(ValueType.class);
-            if (annotation != null && annotation.value() != null) {
-                return annotation.value();
-            }
-        }
-        return valueType;
+    public <E, K, V> ModelBuilder addDataBuilder(Class<E> type,
+            Function<Collection<K>, Map<K, V>> dataBuilder, String buildToType) {
+        return addDataBuilder(type.getName(), dataBuilder, buildToType);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <K, V> ModelBuilder addDataBuilder(String type,
+            Function<Collection<K>, Map<K, V>> dataBuilder, String buildToType) {
+        ((Multimap) dataBuilders).put(type, dataBuilder);
+        buildToMap.put(dataBuilder, buildToType);
+        return this;
     }
 
     @Override

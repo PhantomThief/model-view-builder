@@ -3,7 +3,6 @@
  */
 package me.vela.model.builder.context.impl;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,64 +18,61 @@ import me.vela.model.builder.context.BuildContext;
  */
 public class DefaultBuildContextImpl implements BuildContext {
 
-    private ConcurrentMap<Class<?>, Set<?>> ids = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, Set<?>> ids = new ConcurrentHashMap<>();
 
-    private ConcurrentMap<Class<?>, Map<?, ?>> datas = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, Map<?, ?>> datas = new ConcurrentHashMap<>();
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#getIds(java.lang.Class)
+     * @see me.vela.model.builder.context.BuildContext#getIds(java.lang.String)
      */
     @SuppressWarnings("unchecked")
     @Override
-    public <K, V> Set<K> getIds(Class<V> type) {
+    public <K> Set<K> getIds(String type) {
         return (Set<K>) ids
                 .computeIfAbsent(type, i -> Collections.synchronizedSet(new HashSet<>()));
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#putId(java.lang.Class, java.lang.Object)
+     * @see me.vela.model.builder.context.BuildContext#putId(java.lang.String, java.lang.Object)
      */
     @Override
-    public <K, V> void putId(Class<V> type, K id) {
+    public <K, V> void putId(String type, K id) {
         getIds(type).add(id);
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#putIds(java.lang.Class, java.lang.Iterable)
+     * @see me.vela.model.builder.context.BuildContext#putIds(java.lang.String, java.lang.Iterable)
      */
     @Override
-    public <K, V> void putIds(Class<V> type, Iterable<K> ids) {
-        Set<Object> set = getIds(type);
-        if (ids instanceof Collection) {
-            set.addAll((Collection<? extends Object>) ids);
-        } else {
-            ids.forEach(set::add);
-        }
+    public <K> void putIds(String type, Iterable<K> ids) {
+        ids.forEach(id -> putId(type, id));
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#getData(java.lang.Class)
+     * @see me.vela.model.builder.context.BuildContext#getData(java.lang.String)
      */
     @SuppressWarnings("unchecked")
     @Override
-    public <K, V> Map<K, V> getData(Class<V> type) {
+    public <K, V> Map<K, V> getData(String type) {
         return (Map<K, V>) datas.computeIfAbsent(type, i -> new ConcurrentHashMap<>());
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#putData(java.lang.Class, java.lang.Object, java.lang.Object)
+     * @see me.vela.model.builder.context.BuildContext#putData(java.lang.String, java.lang.Object, java.lang.Object)
      */
     @Override
-    public <K, V> void putData(Class<V> type, K id, V value) {
+    public <K, V> void putData(String type, K id, V value) {
         getData(type).put(id, value);
+
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#putDatas(java.lang.Class, java.util.Map)
+     * @see me.vela.model.builder.context.BuildContext#putDatas(java.lang.String, java.util.Map)
      */
     @Override
-    public <K, V> void putDatas(Class<V> type, Map<K, V> values) {
+    public <K, V> void putDatas(String type, Map<K, V> values) {
         getData(type).putAll(values);
+
     }
 
     /* (non-Javadoc)
@@ -86,12 +82,12 @@ public class DefaultBuildContextImpl implements BuildContext {
     @Override
     public void merge(BuildContext buildContext) {
         if (buildContext instanceof DefaultBuildContextImpl) {
-            for (Entry<Class<?>, Set<?>> entry : ((DefaultBuildContextImpl) buildContext).ids
+            for (Entry<String, Set<?>> entry : ((DefaultBuildContextImpl) buildContext).ids
                     .entrySet()) {
                 putIds(entry.getKey(), entry.getValue());
             }
             for (Entry entry : ((DefaultBuildContextImpl) buildContext).datas.entrySet()) {
-                putDatas((Class) entry.getKey(), (Map) entry.getValue());
+                putDatas((String) entry.getKey(), (Map) entry.getValue());
             }
         } else {
             throw new UnsupportedOperationException();
@@ -102,7 +98,7 @@ public class DefaultBuildContextImpl implements BuildContext {
      * @see me.vela.model.builder.context.BuildContext#allValueTypes()
      */
     @Override
-    public Set<Class<?>> allValueTypes() {
+    public Set<String> allValueTypes() {
         return ids.keySet();
     }
 
@@ -110,5 +106,9 @@ public class DefaultBuildContextImpl implements BuildContext {
     public String toString() {
         return "DefaultBuildContextImpl [ids=" + ids + ", datas=" + datas + "]";
     }
+
+    /* (non-Javadoc)
+     * @see me.vela.model.builder.context.BuildContext#addValueType(java.lang.String)
+     */
 
 }
