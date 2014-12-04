@@ -14,7 +14,9 @@ import java.util.concurrent.ConcurrentMap;
 import me.vela.model.builder.context.BuildContext;
 
 /**
- * <p>DefaultBuildContextImpl class.</p>
+ * <p>
+ * DefaultBuildContextImpl class.
+ * </p>
  *
  * @author w.vela
  * @version $Id: $Id

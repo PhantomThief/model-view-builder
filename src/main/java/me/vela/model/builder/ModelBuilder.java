@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import me.vela.model.builder.context.BuildContext;
@@ -23,12 +24,14 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 /**
- * <p>ModelBuilder class.</p>
+ * <p>
+ * ModelBuilder class.
+ * </p>
  *
  * @author w.vela
  * @version $Id: $Id
  */
-public class ModelBuilder {
+public class ModelBuilder<B extends BuildContext> {
 
     /**
      * key: modelClass, values: idExtractors
@@ -52,6 +55,17 @@ public class ModelBuilder {
     private final Map<Function<?, ?>, String> buildToMap = new HashMap<>();
 
     /**
+     * key:idName, values: dataBuilder
+     */
+    private final Multimap<String, BiFunction<B, Collection<?>, Map<?, ?>>> dataBuildersEx = HashMultimap
+            .create();
+
+    /**
+     * key:dataBuilder, value: overrided valueName
+     */
+    private final Map<BiFunction<B, ?, ?>, String> buildToMapEx = new HashMap<>();
+
+    /**
      * key: modelClass, values: valueExtractors
      */
     private final Multimap<Class<?>, Function<?, Map<?, ?>>> valueExtractors = HashMultimap
@@ -61,11 +75,10 @@ public class ModelBuilder {
      * <p>build.</p>
      *
      * @param sources a {@link java.util.Collection} object.
-     * @return a {@link me.vela.model.builder.context.BuildContext} object.
+     * @param buildContext a B object.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public BuildContext build(Collection<?> sources) {
-        BuildContext finalBuildContext = new DefaultBuildContextImpl();
+    public void build(Collection<?> sources, B buildContext) {
 
         while (!sources.isEmpty()) {
             BuildContext thisBuildContext = new DefaultBuildContextImpl();
@@ -82,6 +95,7 @@ public class ModelBuilder {
                             thisBuildContext.putData((Class) entry.getValue().getClass(),
                                     entry.getKey(), entry.getValue());
                         }
+                        newSources.addAll((Collection) valueMap.values());
                     }
                 }
 
@@ -93,7 +107,7 @@ public class ModelBuilder {
                         continue;
                     }
                     String valueMap = functionValueMap.get((Function<?, ?>) idExtractor);
-                    if (valueMap != null && finalBuildContext.getIds(valueMap).contains(id)) {
+                    if (buildContext.getIds(valueMap).contains(id)) {
                         continue;
                     }
 
@@ -112,7 +126,26 @@ public class ModelBuilder {
 
                     Set<Object> thisIds = thisBuildContext.getIds(valueType);
                     Map values = dataBuilder.apply(thisIds);
+                    if (values == null) {
+                        continue;
+                    }
                     String toValueType = buildToMap.get(dataBuilder);
+                    if (toValueType == null) {
+                        toValueType = valueType;
+                    }
+                    thisBuildContext.putDatas(toValueType, values);
+                    newSources.addAll(values.values());
+                }
+
+                for (BiFunction<B, Collection<?>, Map<?, ?>> dataBuilder : dataBuildersEx
+                        .get(valueType)) {
+
+                    Set<Object> thisIds = thisBuildContext.getIds(valueType);
+                    Map values = dataBuilder.apply(buildContext, thisIds);
+                    if (values == null) {
+                        continue;
+                    }
+                    String toValueType = buildToMapEx.get(dataBuilder);
                     if (toValueType == null) {
                         toValueType = valueType;
                     }
@@ -121,10 +154,9 @@ public class ModelBuilder {
                 }
             }
 
-            finalBuildContext.merge(thisBuildContext);
+            buildContext.merge(thisBuildContext);
             sources = newSources;
         }
-        return finalBuildContext;
     }
 
     private final ConcurrentMap<Class<?>, Set<Function<?, ?>>> idExtractorsCache = new ConcurrentHashMap<>();
@@ -152,77 +184,107 @@ public class ModelBuilder {
     }
 
     /**
-     * <p>buildOne.</p>
+     * <p>
+     * buildOne.
+     * </p>
      *
      * @param one a {@link java.lang.Object} object.
-     * @return a {@link me.vela.model.builder.context.BuildContext} object.
+     * @param buildContext a B object.
      */
-    public BuildContext buildOne(Object one) {
-        return build(Collections.singleton(one));
+    public void buildOne(Object one, B buildContext) {
+        build(Collections.singleton(one), buildContext);
     }
 
     /**
-     * <p>addIdExtractor.</p>
+     * <p>
+     * 添加id extractor
+     * </p>
      *
-     * @param type a {@link java.lang.Class} object.
-     * @param idExtractor a {@link java.util.function.Function} object.
-     * @param valueType a {@link java.lang.Class} object.
+     * @param modelType a {@link java.lang.Class} model的class.
+     * @param modelIdExtractor a {@link java.util.function.Function}
+     *        从model抽出valueId的方法
+     * @param valueType a {@link java.lang.Class} 抽出的value的类型.
      * @param <E> a E object.
      * @return a {@link me.vela.model.builder.ModelBuilder} object.
      */
-    public <E> ModelBuilder addIdExtractor(Class<E> type, Function<E, ?> idExtractor,
+    public <E> ModelBuilder<B> addIdExtractor(Class<E> modelType, Function<E, ?> modelIdExtractor,
             Class<?> valueType) {
-        return addIdExtractor(type, idExtractor, valueType.getName());
+        return addIdExtractorWithName(modelType, modelIdExtractor, valueType.getName());
     }
 
     /**
-     * <p>addIdExtractor.</p>
+     * <p>
+     * 添加id extractor
+     * </p>
      *
-     * @param type a {@link java.lang.Class} object.
-     * @param idExtractor a {@link java.util.function.Function} object.
-     * @param valueType a {@link java.lang.String} object.
+     * @param modelType a {@link java.lang.Class} model的class.
+     * @param modelIdExtractor a {@link java.util.function.Function}
+     *        从model抽出valueId的方法
+     * @param valueIdName a {@link java.lang.String} 对应id的名字
      * @param <E> a E object.
      * @return a {@link me.vela.model.builder.ModelBuilder} object.
      */
-    public <E> ModelBuilder addIdExtractor(Class<E> type, Function<E, ?> idExtractor,
-            String valueType) {
-        idExtractors.put(type, idExtractor);
-        functionValueMap.put(idExtractor, valueType);
+    public <E> ModelBuilder<B> addIdExtractorWithName(Class<E> modelType,
+            Function<E, ?> modelIdExtractor, String valueIdName) {
+        idExtractors.put(modelType, modelIdExtractor);
+        functionValueMap.put(modelIdExtractor, valueIdName);
         return this;
     }
 
     /**
-     * <p>addValueExtractor.</p>
+     * <p>
+     * addValueExtractor.
+     * </p>
      *
-     * @param type a {@link java.lang.Class} object.
+     * @param modelType a {@link java.lang.Class} object.
      * @param valueExtractor a {@link java.util.function.Function} object.
      * @param <E> a E object.
      * @return a {@link me.vela.model.builder.ModelBuilder} object.
      */
-    public <E> ModelBuilder addValueExtractor(Class<E> type, Function<E, Map<?, ?>> valueExtractor) {
-        valueExtractors.put(type, valueExtractor);
+    public <E> ModelBuilder<B> addValueExtractor(Class<E> modelType,
+            Function<E, Map<?, ?>> valueExtractor) {
+        valueExtractors.put(modelType, valueExtractor);
         return this;
     }
 
     /**
-     * <p>addDataBuilder.</p>
+     * <p>
+     * addDataBuilder.
+     * </p>
      *
-     * @param type a {@link java.lang.Class} object.
+     * @param valueType a {@link java.lang.Class} object.
      * @param dataBuilder a {@link java.util.function.Function} object.
      * @param <E> a E object.
      * @param <K> a K object.
      * @param <V> a V object.
      * @return a {@link me.vela.model.builder.ModelBuilder} object.
      */
-    public <E, K, V> ModelBuilder addDataBuilder(Class<E> type,
+    public <E, K, V> ModelBuilder<B> addDataBuilder(Class<E> valueType,
             Function<Collection<K>, Map<K, V>> dataBuilder) {
-        return addDataBuilder(type.getName(), dataBuilder);
+        return addDataBuilder(valueType.getName(), dataBuilder);
     }
 
     /**
-     * <p>addDataBuilder.</p>
+     * <p>addDataBuilderEx.</p>
      *
-     * @param type a {@link java.lang.String} object.
+     * @param valueType a {@link java.lang.Class} object.
+     * @param dataBuilder a {@link java.util.function.BiFunction} object.
+     * @param <E> a E object.
+     * @param <K> a K object.
+     * @param <V> a V object.
+     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     */
+    public <E, K, V> ModelBuilder<B> addDataBuilderEx(Class<E> valueType,
+            BiFunction<B, Collection<K>, Map<K, V>> dataBuilder) {
+        return addDataBuilderEx(valueType.getName(), dataBuilder);
+    }
+
+    /**
+     * <p>
+     * addDataBuilder.
+     * </p>
+     *
+     * @param valueIdName a {@link java.lang.String} object.
      * @param dataBuilder a {@link java.util.function.Function} object.
      * @param <E> a E object.
      * @param <K> a K object.
@@ -230,43 +292,98 @@ public class ModelBuilder {
      * @return a {@link me.vela.model.builder.ModelBuilder} object.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public <E, K, V> ModelBuilder addDataBuilder(String type,
+    public <E, K, V> ModelBuilder<B> addDataBuilder(String valueIdName,
             Function<Collection<K>, Map<K, V>> dataBuilder) {
-        ((Multimap) dataBuilders).put(type, dataBuilder);
+        ((Multimap) dataBuilders).put(valueIdName, dataBuilder);
         return this;
     }
 
     /**
-     * <p>addDataBuilder.</p>
+     * <p>addDataBuilderEx.</p>
      *
-     * @param type a {@link java.lang.Class} object.
-     * @param dataBuilder a {@link java.util.function.Function} object.
-     * @param buildToType a {@link java.lang.String} object.
+     * @param valueIdName a {@link java.lang.String} object.
+     * @param dataBuilder a {@link java.util.function.BiFunction} object.
      * @param <E> a E object.
      * @param <K> a K object.
      * @param <V> a V object.
      * @return a {@link me.vela.model.builder.ModelBuilder} object.
      */
-    public <E, K, V> ModelBuilder addDataBuilder(Class<E> type,
-            Function<Collection<K>, Map<K, V>> dataBuilder, String buildToType) {
-        return addDataBuilder(type.getName(), dataBuilder, buildToType);
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <E, K, V> ModelBuilder<B> addDataBuilderEx(String valueIdName,
+            BiFunction<B, Collection<K>, Map<K, V>> dataBuilder) {
+        ((Multimap) dataBuildersEx).put(valueIdName, dataBuilder);
+        return this;
     }
 
     /**
-     * <p>addDataBuilder.</p>
+     * <p>
+     * addDataBuilder.
+     * </p>
      *
-     * @param type a {@link java.lang.String} object.
+     * @param modelType a {@link java.lang.Class} object.
      * @param dataBuilder a {@link java.util.function.Function} object.
-     * @param buildToType a {@link java.lang.String} object.
+     * @param buildToValueName a {@link java.lang.String} object.
+     * @param <E> a E object.
+     * @param <K> a K object.
+     * @param <V> a V object.
+     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     */
+    public <E, K, V> ModelBuilder<B> addDataBuilderWithValueName(Class<E> modelType,
+            Function<Collection<K>, Map<K, V>> dataBuilder, String buildToValueName) {
+        return addDataBuilderWithValueName(modelType.getName(), dataBuilder, buildToValueName);
+    }
+
+    /**
+     * <p>addDataBuilderWithValueNameEx.</p>
+     *
+     * @param modelType a {@link java.lang.Class} object.
+     * @param dataBuilder a {@link java.util.function.BiFunction} object.
+     * @param buildToValueName a {@link java.lang.String} object.
+     * @param <E> a E object.
+     * @param <K> a K object.
+     * @param <V> a V object.
+     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     */
+    public <E, K, V> ModelBuilder<B> addDataBuilderWithValueNameEx(Class<E> modelType,
+            BiFunction<B, Collection<K>, Map<K, V>> dataBuilder, String buildToValueName) {
+        return addDataBuilderWithValueNameEx(modelType.getName(), dataBuilder, buildToValueName);
+    }
+
+    /**
+     * <p>
+     * addDataBuilder.
+     * </p>
+     *
+     * @param idValueName a {@link java.lang.String} object.
+     * @param dataBuilder a {@link java.util.function.Function} object.
+     * @param buildToValueName a {@link java.lang.String} object.
      * @param <K> a K object.
      * @param <V> a V object.
      * @return a {@link me.vela.model.builder.ModelBuilder} object.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public <K, V> ModelBuilder addDataBuilder(String type,
-            Function<Collection<K>, Map<K, V>> dataBuilder, String buildToType) {
-        ((Multimap) dataBuilders).put(type, dataBuilder);
-        buildToMap.put(dataBuilder, buildToType);
+    public <K, V> ModelBuilder<B> addDataBuilderWithValueName(String idValueName,
+            Function<Collection<K>, Map<K, V>> dataBuilder, String buildToValueName) {
+        ((Multimap) dataBuilders).put(idValueName, dataBuilder);
+        buildToMap.put(dataBuilder, buildToValueName);
+        return this;
+    }
+
+    /**
+     * <p>addDataBuilderWithValueNameEx.</p>
+     *
+     * @param idValueName a {@link java.lang.String} object.
+     * @param dataBuilder a {@link java.util.function.BiFunction} object.
+     * @param buildToValueName a {@link java.lang.String} object.
+     * @param <K> a K object.
+     * @param <V> a V object.
+     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <K, V> ModelBuilder<B> addDataBuilderWithValueNameEx(String idValueName,
+            BiFunction<B, Collection<K>, Map<K, V>> dataBuilder, String buildToValueName) {
+        ((Multimap) dataBuildersEx).put(idValueName, dataBuilder);
+        buildToMapEx.put(dataBuilder, buildToValueName);
         return this;
     }
 
