@@ -14,7 +14,10 @@ import java.util.concurrent.ConcurrentMap;
 import me.vela.model.builder.context.BuildContext;
 
 /**
+ * <p>DefaultBuildContextImpl class.</p>
+ *
  * @author w.vela
+ * @version $Id: $Id
  */
 public class DefaultBuildContextImpl implements BuildContext {
 
@@ -25,6 +28,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /* (non-Javadoc)
      * @see me.vela.model.builder.context.BuildContext#getIds(java.lang.String)
      */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override
     public <K> Set<K> getIds(String type) {
@@ -35,6 +39,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /* (non-Javadoc)
      * @see me.vela.model.builder.context.BuildContext#putId(java.lang.String, java.lang.Object)
      */
+    /** {@inheritDoc} */
     @Override
     public <K, V> void putId(String type, K id) {
         getIds(type).add(id);
@@ -43,6 +48,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /* (non-Javadoc)
      * @see me.vela.model.builder.context.BuildContext#putIds(java.lang.String, java.lang.Iterable)
      */
+    /** {@inheritDoc} */
     @Override
     public <K> void putIds(String type, Iterable<K> ids) {
         ids.forEach(id -> putId(type, id));
@@ -51,6 +57,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /* (non-Javadoc)
      * @see me.vela.model.builder.context.BuildContext#getData(java.lang.String)
      */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override
     public <K, V> Map<K, V> getData(String type) {
@@ -60,6 +67,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /* (non-Javadoc)
      * @see me.vela.model.builder.context.BuildContext#putData(java.lang.String, java.lang.Object, java.lang.Object)
      */
+    /** {@inheritDoc} */
     @Override
     public <K, V> void putData(String type, K id, V value) {
         getData(type).put(id, value);
@@ -69,6 +77,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /* (non-Javadoc)
      * @see me.vela.model.builder.context.BuildContext#putDatas(java.lang.String, java.util.Map)
      */
+    /** {@inheritDoc} */
     @Override
     public <K, V> void putDatas(String type, Map<K, V> values) {
         getData(type).putAll(values);
@@ -78,6 +87,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /* (non-Javadoc)
      * @see me.vela.model.builder.context.BuildContext#merge(me.vela.model.builder.context.BuildContext)
      */
+    /** {@inheritDoc} */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void merge(BuildContext buildContext) {
@@ -97,18 +107,16 @@ public class DefaultBuildContextImpl implements BuildContext {
     /* (non-Javadoc)
      * @see me.vela.model.builder.context.BuildContext#allValueTypes()
      */
+    /** {@inheritDoc} */
     @Override
     public Set<String> allValueTypes() {
         return ids.keySet();
     }
 
+    /** {@inheritDoc} */
     @Override
     public String toString() {
         return "DefaultBuildContextImpl [ids=" + ids + ", datas=" + datas + "]";
     }
-
-    /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#addValueType(java.lang.String)
-     */
 
 }
