@@ -33,6 +33,8 @@ import com.google.common.collect.Multimap;
  */
 public class ModelBuilder<B extends BuildContext> {
 
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(getClass());
+
     /**
      * key: modelClass, values: idExtractors
      */
@@ -72,17 +74,35 @@ public class ModelBuilder<B extends BuildContext> {
             .create();
 
     /**
-     * <p>build.</p>
+     * key:valueExtractor, value:idName
+     */
+    private final Map<Function<?, ?>, String> valueExtractorIdNameMap = new HashMap<>();
+
+    /**
+     * key:valueExtractor, value:valueName
+     */
+    private final Map<Function<?, ?>, String> valueExtractorValueNameMap = new HashMap<>();
+
+    /**
+     * <p>
+     * build.
+     * </p>
      *
      * @param sources a {@link java.util.Collection} object.
      * @param buildContext a B object.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void build(Collection<?> sources, B buildContext) {
+        sources = new HashSet<>(sources);
+        int i = 0;
 
         while (!sources.isEmpty()) {
+            i++;
+
             BuildContext thisBuildContext = new DefaultBuildContextImpl();
             Set<?> newSources = new HashSet<>();
+
+            Set<Object> valueExtracted = new HashSet<>();
 
             // 尝试提取所有values
             for (Object t : sources) {
@@ -91,14 +111,36 @@ public class ModelBuilder<B extends BuildContext> {
                 for (Function valueExtractor : thisValueExtractors) {
                     Map<?, ?> valueMap = (Map<?, ?>) valueExtractor.apply(t);
                     if (valueMap != null) {
+                        String idName = valueExtractorIdNameMap.get(valueExtractor);
+                        String valueName = valueExtractorValueNameMap.get(valueExtractor);
+
                         for (Entry<?, ?> entry : valueMap.entrySet()) {
-                            thisBuildContext.putData((Class) entry.getValue().getClass(),
-                                    entry.getKey(), entry.getValue());
+                            if (buildContext.getIds(idName).contains(entry.getKey())) {
+                                logger.trace("第[{}]次构建，直接抽出value，忽略id[{}]:{}", i, idName,
+                                        entry.getKey());
+                                continue;
+                            }
+                            if (buildContext.getData(valueName).containsKey(entry.getKey())) {
+                                logger.trace("第[{}]次构建，直接抽出value，忽略value[{}]:{}", i, valueName,
+                                        entry.getKey());
+                                continue;
+                            }
+                            logger.trace("第[{}]次构建，直接抽出value，直接抽出[{}]->[{}]:{}", i, idName,
+                                    valueName, entry);
+
+                            thisBuildContext.putData(valueName, entry.getKey(), entry.getValue());
+                            thisBuildContext.putId(idName, entry.getKey());
+                            valueExtracted.add(entry.getValue());
                         }
-                        newSources.addAll((Collection) valueMap.values());
                     }
                 }
+            }
 
+            logger.trace("第[{}]次构建，直接抽出value:{}", i, valueExtracted);
+
+            sources.addAll((Collection) valueExtracted);
+
+            for (Object t : sources) {
                 Collection<Function<?, ?>> thisIdExtractors = getIdExtractors(t.getClass());
                 // 提取数据
                 for (Function idExtractor : thisIdExtractors) {
@@ -107,13 +149,20 @@ public class ModelBuilder<B extends BuildContext> {
                         continue;
                     }
                     String valueMap = functionValueMap.get((Function<?, ?>) idExtractor);
-                    if (buildContext.getIds(valueMap).contains(id)) {
-                        continue;
-                    }
 
                     if (id instanceof Iterable) {
-                        thisBuildContext.putIds(valueMap, (Iterable<?>) id);
+                        for (Object thisId : (Iterable<?>) id) {
+                            if (buildContext.getIds(valueMap).contains(thisId)) {
+                                logger.trace("第[{}]次构建，抽出id，忽略id[{}]:{}", i, valueMap, thisId);
+                                continue;
+                            }
+                            thisBuildContext.putId(valueMap, thisId);
+                        }
                     } else {
+                        if (buildContext.getIds(valueMap).contains(id)) {
+                            logger.trace("第[{}]次构建，抽出id，忽略id[{}]:{}", i, valueMap, id);
+                            continue;
+                        }
                         thisBuildContext.putId(valueMap, id);
                     }
                 }
@@ -125,33 +174,50 @@ public class ModelBuilder<B extends BuildContext> {
                 for (Function<Collection<?>, Map<?, ?>> dataBuilder : dataBuilders.get(valueType)) {
 
                     Set<Object> thisIds = thisBuildContext.getIds(valueType);
-                    Map values = dataBuilder.apply(thisIds);
-                    if (values == null) {
-                        continue;
-                    }
                     String toValueType = buildToMap.get(dataBuilder);
                     if (toValueType == null) {
                         toValueType = valueType;
                     }
+                    if (thisIds.removeAll(thisBuildContext.getData(toValueType).keySet())) {
+                        logger.trace("第[{}]次构建，构建数据，忽略value[{}]，剩余id:{}", i, toValueType, thisIds);
+                    }
+                    if (thisIds.isEmpty()) {
+                        continue;
+                    }
+
+                    Map values = dataBuilder.apply(thisIds);
+                    if (values == null) {
+                        continue;
+                    }
                     thisBuildContext.putDatas(toValueType, values);
                     newSources.addAll(values.values());
+                    logger.trace("第[{}]次构建，产生数据[{}]:{}", i, toValueType, values);
                 }
 
                 for (BiFunction<B, Collection<?>, Map<?, ?>> dataBuilder : dataBuildersEx
                         .get(valueType)) {
 
                     Set<Object> thisIds = thisBuildContext.getIds(valueType);
-                    Map values = dataBuilder.apply(buildContext, thisIds);
-                    if (values == null) {
-                        continue;
-                    }
                     String toValueType = buildToMapEx.get(dataBuilder);
                     if (toValueType == null) {
                         toValueType = valueType;
                     }
+                    if (thisIds.removeAll(thisBuildContext.getData(toValueType).keySet())) {
+                        logger.trace("第[{}]次构建，构建数据EX，忽略value[{}]，剩余id:{}", i, toValueType, thisIds);
+                    }
+                    if (thisIds.isEmpty()) {
+                        continue;
+                    }
+
+                    Map values = dataBuilder.apply(buildContext, thisIds);
+                    if (values == null) {
+                        continue;
+                    }
                     thisBuildContext.putDatas(toValueType, values);
                     newSources.addAll(values.values());
+                    logger.trace("第[{}]次构建，产生数据EX[{}]:{}", i, toValueType, values);
                 }
+
             }
 
             buildContext.merge(thisBuildContext);
@@ -242,8 +308,18 @@ public class ModelBuilder<B extends BuildContext> {
      * @return a {@link me.vela.model.builder.ModelBuilder} object.
      */
     public <E> ModelBuilder<B> addValueExtractor(Class<E> modelType,
-            Function<E, Map<?, ?>> valueExtractor) {
+            Function<E, Map<?, ?>> valueExtractor, String idName, String valueName) {
         valueExtractors.put(modelType, valueExtractor);
+        valueExtractorIdNameMap.put(valueExtractor, idName);
+        valueExtractorValueNameMap.put(valueExtractor, valueName);
+        return this;
+    }
+
+    public <E> ModelBuilder<B> addValueExtractor(Class<E> modelType,
+            Function<E, Map<?, ?>> valueExtractor, Class<?> idValueType) {
+        valueExtractors.put(modelType, valueExtractor);
+        valueExtractorIdNameMap.put(valueExtractor, idValueType.getName());
+        valueExtractorValueNameMap.put(valueExtractor, idValueType.getName());
         return this;
     }
 
@@ -265,7 +341,9 @@ public class ModelBuilder<B extends BuildContext> {
     }
 
     /**
-     * <p>addDataBuilderEx.</p>
+     * <p>
+     * addDataBuilderEx.
+     * </p>
      *
      * @param valueType a {@link java.lang.Class} object.
      * @param dataBuilder a {@link java.util.function.BiFunction} object.
@@ -299,7 +377,9 @@ public class ModelBuilder<B extends BuildContext> {
     }
 
     /**
-     * <p>addDataBuilderEx.</p>
+     * <p>
+     * addDataBuilderEx.
+     * </p>
      *
      * @param valueIdName a {@link java.lang.String} object.
      * @param dataBuilder a {@link java.util.function.BiFunction} object.
@@ -334,7 +414,9 @@ public class ModelBuilder<B extends BuildContext> {
     }
 
     /**
-     * <p>addDataBuilderWithValueNameEx.</p>
+     * <p>
+     * addDataBuilderWithValueNameEx.
+     * </p>
      *
      * @param modelType a {@link java.lang.Class} object.
      * @param dataBuilder a {@link java.util.function.BiFunction} object.
@@ -370,7 +452,9 @@ public class ModelBuilder<B extends BuildContext> {
     }
 
     /**
-     * <p>addDataBuilderWithValueNameEx.</p>
+     * <p>
+     * addDataBuilderWithValueNameEx.
+     * </p>
      *
      * @param idValueName a {@link java.lang.String} object.
      * @param dataBuilder a {@link java.util.function.BiFunction} object.
