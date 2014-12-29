@@ -93,6 +93,9 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void build(Collection<?> sources, B buildContext) {
+        if (sources == null) {
+            return;
+        }
         sources = new HashSet<>(sources);
         int i = 0;
 
@@ -170,6 +173,10 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
             }
 
             // 构建数据
+            if (logger.isTraceEnabled()) {
+                logger.trace("第[{}]次构建，候选构建类型:{}", i, thisBuildContext.allValueTypes());
+            }
+
             for (String valueType : thisBuildContext.allValueTypes()) {
                 for (Function<Collection<?>, Map<?, ?>> dataBuilder : dataBuilders.get(valueType)) {
 
