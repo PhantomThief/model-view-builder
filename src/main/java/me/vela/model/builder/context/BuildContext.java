@@ -29,7 +29,7 @@ public interface BuildContext {
         putIds(type.getName(), ids);
     }
 
-    public Iterable<String> allValueTypes();
+    public Set<String> allValueTypes();
 
     public <K, V> Map<K, V> getData(String type);
 

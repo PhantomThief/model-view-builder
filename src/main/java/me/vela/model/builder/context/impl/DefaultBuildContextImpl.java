@@ -10,10 +10,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import me.vela.model.builder.context.BuildContext;
-
-import com.google.common.collect.Iterables;
 
 /**
  * <p>
@@ -113,8 +113,9 @@ public class DefaultBuildContextImpl implements BuildContext {
      */
     /** {@inheritDoc} */
     @Override
-    public Iterable<String> allValueTypes() {
-        return Iterables.concat(ids.keySet(), datas.keySet());
+    public Set<String> allValueTypes() {
+        return Stream.of(ids.keySet(), datas.keySet()).flatMap(Set::stream)
+                .collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */
