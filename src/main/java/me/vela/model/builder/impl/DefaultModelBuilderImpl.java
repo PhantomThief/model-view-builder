@@ -178,13 +178,17 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
             }
 
             for (String valueType : thisBuildContext.allValueTypes()) {
+
                 for (Function<Collection<?>, Map<?, ?>> dataBuilder : dataBuilders.get(valueType)) {
 
-                    Set<Object> thisIds = thisBuildContext.getIds(valueType);
+                    Set<Object> thisIds = new HashSet<>(thisBuildContext.getIds(valueType));
                     String toValueType = buildToMap.get(dataBuilder);
                     if (toValueType == null) {
                         toValueType = valueType;
                     }
+                    logger.trace("第[{}]次构建，数据类型:{}, 构建器:{}, 构建目标:{}, 构建id:[{}]", i, valueType,
+                            dataBuilder, toValueType, thisIds);
+
                     if (thisIds.removeAll(thisBuildContext.getData(toValueType).keySet())) {
                         logger.trace("第[{}]次构建，构建数据，忽略value[{}]，剩余id:{}", i, toValueType, thisIds);
                     }
