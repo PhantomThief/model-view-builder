@@ -1,7 +1,7 @@
 /**
  * 
  */
-package me.vela.view.mapper.impl;
+package com.github.phantomthief.view.mapper.impl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,10 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 
-import me.vela.model.builder.context.BuildContext;
-import me.vela.view.mapper.ViewMapper;
-
 import org.apache.commons.lang3.ClassUtils;
+
+import com.github.phantomthief.model.builder.context.BuildContext;
+import com.github.phantomthief.view.mapper.ViewMapper;
 
 /**
  * <p>DefaultViewMapperImpl class.</p>
@@ -68,7 +68,7 @@ public class DefaultViewMapperImpl implements ViewMapper {
      * @param viewFactory a {@link java.util.function.BiFunction} object.
      * @param <M> a M object.
      * @param <V> a V object.
-     * @return a {@link me.vela.view.mapper.impl.DefaultViewMapperImpl} object.
+     * @return a {@link com.github.phantomthief.view.mapper.impl.DefaultViewMapperImpl} object.
      */
     public <M, V> DefaultViewMapperImpl addMapper(Class<M> modelType,
             BiFunction<BuildContext, M, V> viewFactory) {

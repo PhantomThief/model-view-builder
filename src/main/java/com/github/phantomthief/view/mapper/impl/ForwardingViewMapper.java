@@ -1,9 +1,9 @@
 /**
  * 
  */
-package me.vela.view.mapper.impl;
+package com.github.phantomthief.view.mapper.impl;
 
-import me.vela.view.mapper.ViewMapper;
+import com.github.phantomthief.view.mapper.ViewMapper;
 
 /**
  * <p>Abstract ForwardingViewMapper class.</p>
@@ -18,7 +18,7 @@ public abstract class ForwardingViewMapper implements ViewMapper {
     /**
      * <p>Constructor for ForwardingViewMapper.</p>
      *
-     * @param delegate a {@link me.vela.view.mapper.ViewMapper} object.
+     * @param delegate a {@link com.github.phantomthief.view.mapper.ViewMapper} object.
      */
     protected ForwardingViewMapper(ViewMapper delegate) {
         this.delegate = delegate;

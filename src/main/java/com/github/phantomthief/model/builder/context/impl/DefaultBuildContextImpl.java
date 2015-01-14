@@ -1,7 +1,7 @@
 /**
  * 
  */
-package me.vela.model.builder.context.impl;
+package com.github.phantomthief.model.builder.context.impl;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import me.vela.model.builder.context.BuildContext;
+import com.github.phantomthief.model.builder.context.BuildContext;
 
 /**
  * <p>
@@ -30,7 +30,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     private ConcurrentMap<String, Map<?, ?>> datas = new ConcurrentHashMap<>();
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#getIds(java.lang.String)
+     * @see com.github.phantomthief.model.builder.context.BuildContext#getIds(java.lang.String)
      */
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -41,7 +41,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#putId(java.lang.String, java.lang.Object)
+     * @see com.github.phantomthief.model.builder.context.BuildContext#putId(java.lang.String, java.lang.Object)
      */
     /** {@inheritDoc} */
     @Override
@@ -50,7 +50,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#putIds(java.lang.String, java.lang.Iterable)
+     * @see com.github.phantomthief.model.builder.context.BuildContext#putIds(java.lang.String, java.lang.Iterable)
      */
     /** {@inheritDoc} */
     @Override
@@ -59,7 +59,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#getData(java.lang.String)
+     * @see com.github.phantomthief.model.builder.context.BuildContext#getData(java.lang.String)
      */
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -69,7 +69,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#putData(java.lang.String, java.lang.Object, java.lang.Object)
+     * @see com.github.phantomthief.model.builder.context.BuildContext#putData(java.lang.String, java.lang.Object, java.lang.Object)
      */
     /** {@inheritDoc} */
     @Override
@@ -79,7 +79,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#putDatas(java.lang.String, java.util.Map)
+     * @see com.github.phantomthief.model.builder.context.BuildContext#putDatas(java.lang.String, java.util.Map)
      */
     /** {@inheritDoc} */
     @Override
@@ -89,7 +89,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#merge(me.vela.model.builder.context.BuildContext)
+     * @see com.github.phantomthief.model.builder.context.BuildContext#merge(com.github.phantomthief.model.builder.context.BuildContext)
      */
     /** {@inheritDoc} */
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -109,7 +109,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     }
 
     /* (non-Javadoc)
-     * @see me.vela.model.builder.context.BuildContext#allValueTypes()
+     * @see com.github.phantomthief.model.builder.context.BuildContext#allValueTypes()
      */
     /** {@inheritDoc} */
     @Override

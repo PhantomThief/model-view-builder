@@ -1,7 +1,7 @@
 /**
  * 
  */
-package me.vela.view.mapper;
+package com.github.phantomthief.view.mapper;
 
 import java.util.Collection;
 import java.util.List;

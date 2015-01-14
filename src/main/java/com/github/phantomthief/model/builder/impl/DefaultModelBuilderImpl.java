@@ -1,7 +1,7 @@
 /**
  * 
  */
-package me.vela.model.builder.impl;
+package com.github.phantomthief.model.builder.impl;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,12 +14,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import me.vela.model.builder.ModelBuilder;
-import me.vela.model.builder.context.BuildContext;
-import me.vela.model.builder.context.impl.DefaultBuildContextImpl;
-
 import org.apache.commons.lang3.ClassUtils;
 
+import com.github.phantomthief.model.builder.ModelBuilder;
+import com.github.phantomthief.model.builder.context.BuildContext;
+import com.github.phantomthief.model.builder.context.impl.DefaultBuildContextImpl;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -270,7 +269,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      *        从model抽出valueId的方法
      * @param valueType a {@link java.lang.Class} 抽出的value的类型.
      * @param <E> a E object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     public <E> DefaultModelBuilderImpl<B> addIdExtractor(Class<E> modelType,
             Function<E, ?> modelIdExtractor, Class<?> valueType) {
@@ -287,7 +286,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      *        从model抽出valueId的方法
      * @param valueIdName a {@link java.lang.String} 对应id的名字
      * @param <E> a E object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     public <E> DefaultModelBuilderImpl<B> addIdExtractorWithName(Class<E> modelType,
             Function<E, ?> modelIdExtractor, String valueIdName) {
@@ -304,7 +303,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param modelType a {@link java.lang.Class} object.
      * @param valueExtractor a {@link java.util.function.Function} object.
      * @param <E> a E object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     public <E> DefaultModelBuilderImpl<B> addValueExtractor(Class<E> modelType,
             Function<E, Map<?, ?>> valueExtractor, String idName, String valueName) {
@@ -332,7 +331,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param <E> a E object.
      * @param <K> a K object.
      * @param <V> a V object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     public <E, K, V> DefaultModelBuilderImpl<B> addDataBuilder(Class<E> valueType,
             Function<Collection<K>, Map<K, V>> dataBuilder) {
@@ -349,7 +348,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param <E> a E object.
      * @param <K> a K object.
      * @param <V> a V object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     public <E, K, V> DefaultModelBuilderImpl<B> addDataBuilderEx(Class<E> valueType,
             BiFunction<B, Collection<K>, Map<K, V>> dataBuilder) {
@@ -366,7 +365,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param <E> a E object.
      * @param <K> a K object.
      * @param <V> a V object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <E, K, V> DefaultModelBuilderImpl<B> addDataBuilder(String valueIdName,
@@ -385,7 +384,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param <E> a E object.
      * @param <K> a K object.
      * @param <V> a V object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <E, K, V> DefaultModelBuilderImpl<B> addDataBuilderEx(String valueIdName,
@@ -405,7 +404,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param <E> a E object.
      * @param <K> a K object.
      * @param <V> a V object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     public <E, K, V> DefaultModelBuilderImpl<B> addDataBuilderWithValueName(Class<E> modelType,
             Function<Collection<K>, Map<K, V>> dataBuilder, String buildToValueName) {
@@ -423,7 +422,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param <E> a E object.
      * @param <K> a K object.
      * @param <V> a V object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     public <E, K, V> DefaultModelBuilderImpl<B> addDataBuilderWithValueNameEx(Class<E> modelType,
             BiFunction<B, Collection<K>, Map<K, V>> dataBuilder, String buildToValueName) {
@@ -440,7 +439,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param buildToValueName a {@link java.lang.String} object.
      * @param <K> a K object.
      * @param <V> a V object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <K, V> DefaultModelBuilderImpl<B> addDataBuilderWithValueName(String idValueName,
@@ -460,7 +459,7 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
      * @param buildToValueName a {@link java.lang.String} object.
      * @param <K> a K object.
      * @param <V> a V object.
-     * @return a {@link me.vela.model.builder.ModelBuilder} object.
+     * @return a {@link com.github.phantomthief.model.builder.ModelBuilder} object.
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <K, V> DefaultModelBuilderImpl<B> addDataBuilderWithValueNameEx(String idValueName,

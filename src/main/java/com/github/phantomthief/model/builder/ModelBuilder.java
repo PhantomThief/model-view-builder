@@ -1,12 +1,12 @@
 /**
  * 
  */
-package me.vela.model.builder;
+package com.github.phantomthief.model.builder;
 
 import java.util.Collection;
 import java.util.Collections;
 
-import me.vela.model.builder.context.BuildContext;
+import com.github.phantomthief.model.builder.context.BuildContext;
 
 /**
  * <p>
