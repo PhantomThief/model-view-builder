@@ -191,11 +191,62 @@ List<PostView> postViews = viewMapper.map(postList, bulidContext);
 
 ### 自定义BuildContext
 
-TODO
+很多使用，希望把一些初始参数放入BuildContext中，这时候可以考虑使用自定义的BuildContext。以需要知道访问者身份的构建器为例：
+```Java
+public class MyBuildContext extends BuildContext {
+	private int visitor;
+	public int getVisitor() {
+		return this.visitor;
+	}
+	public void setVisitor(int visitor){
+		this.visitor = visitor;
+	}
+}
+```
+
+然后在声明ModelBuilder时，可以使用MyBuildContext代替默认的BuildContext：
+```Java
+ModelBuilder<MyBuildContext> modelBuilder = new DefaultModelBuilderImpl<MyBuildContext>()
+	.addDataBuilderEx(Post.class, (MyBuildContext buildContext, postIds) -> postService.isUserFavoritedPosts(buildContext.getVisitor(), postIds), "userFavoritesPosts");
+	.build();
+```
+
+使用构建器时：
+```Java
+int visitor = 999;
+MyBuildContext myBuildContext = new MyBuildContext();
+myBuildContext.setVisitor(visitor);
+
+modelBuilder.build(posts, myBuildContext);
+```
 
 ### Model中可以直接抽出其它Model的情况
 
-TODO
+如果一个model里可以获得另外别的model，就可以使用这种方法来抽出元素。举例：
+```Java
+public class Post {
+	private User author;
+	public User getAuthor() {
+		return this.author;
+	}
+	private List<User> atUsers;
+	public List<User> getAtUsers() {
+		return this.atUsers;
+	}
+}
+```
+
+那么依赖声明时可以这样：
+```Java
+ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildContext>()
+	.addValueExtractor(Post.class, post -> {
+		Map<Integer, User> userMap = new HashMap<>();
+		userMap.put(post.getAuthor().getId(), post.getAuthor());
+		post.getAtUsers().forEach(user -> userMap.put(user.getId(), user));
+		return userMap;
+	}, User.class)
+	.build();
+```
 
 ### 基于反射的ViewMapper声明
 
