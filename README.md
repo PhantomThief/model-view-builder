@@ -250,19 +250,87 @@ ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildConte
 
 ### 基于反射的ViewMapper声明
 
-TODO
+如果View可以按照某些约定去编写（例如放在特定包下，或者使用特定注解作为工厂方法/构建方法之类的），那么可以利用反射去完成构建。这也是ViewMapper声明的推荐做法。
+
+由于View的实现各式各样，这里就不提供统一的工具方法，只是提供一个简单的例子：
+```Java
+public static final ViewMapper scan(String pkg, Set<Class<?>> ignoreViews) {
+    DefaultViewMapperImpl viewMapper = new DefaultViewMapperImpl();
+    try {
+        ImmutableSet<ClassInfo> topLevelClasses = ClassPath.from(
+                ViewerScanner.class.getClassLoader()).getTopLevelClassesRecursive(pkg);
+        for (ClassInfo classInfo : topLevelClasses) {
+            Class<?> type = classInfo.load();
+            if (ignoreViews.contains(type)) {
+                continue;
+            }
+            Constructor<?>[] constructors = type.getConstructors();
+            for (Constructor<?> constructor : constructors) {
+                Class<?>[] parameterTypes = constructor.getParameterTypes();
+                if (parameterTypes.length == 2 && parameterTypes[1] == BuildContext.class) {
+                    logger.info("register view [{}] for model [{}], with buildContext.",
+                            type.getSimpleName(), parameterTypes[0].getSimpleName());
+                    viewMapper.addMapper(parameterTypes[0], (buildContext, i) -> {
+                        try {
+                            return constructor.newInstance(i, buildContext);
+                        } catch (Exception e) {
+                            logger.error("fail to construct model:{}", i, e);
+                            return null;
+                        }
+                    });
+                }
+                if (parameterTypes.length == 1) {
+                    logger.info("register view [{}] for model [{}]", type.getSimpleName(),
+                            parameterTypes[0].getSimpleName());
+                    viewMapper.addMapper(parameterTypes[0], (buildContext, i) -> {
+                        try {
+                            return constructor.newInstance(i);
+                        } catch (Exception e) {
+                            logger.error("fail to construct model:{}", i, e);
+                            return null;
+                        }
+                    });
+                }
+            }
+        }
+    } catch (IOException e) {
+        logger.error("Ops.", e);
+    }
+    return viewMapper;
+}
+```
 
 ### 使用merge方式简化ModelBuilder的维护
 
-TODO
+当一个项目非常庞大时，ModelBuilder依赖会变得异常庞大。这时候，可以把依赖按照业务拆分：
+```Java
+DefaultModelBuilderImpl<BuildContext> userModelBuilder = new DefaultModelBuilderImpl<BuildContext>()
+	// ...一些依赖的定义
+	.build();
+	
+DefaultModelBuilderImpl<BuildContext> postModelBuilder = new DefaultModelBuilderImpl<BuildContext>()
+	// ...一些依赖的定义
+	.build();
+	
+DefaultModelBuilderImpl<BuildContext> combineModelBuilder = new DefaultModelBuilderImpl<BuildContext>()
+	.build();
 
-### 基于注解的ModelBuilder声明
+combineModelBuilder.merge(userModelBuilder);
+combineModelBuilder.merge(postModelBuilder);
+```
 
-TODO
+注意，现阶段，merge操作只是简单的对依赖关系的复制。
 
 ### 使用OverrideViewMapper进行View映射的剪裁和定制
 
-TODO
+特定场景下，可能强制覆盖某些Model到View的映射关系，比如正常场景下，User对象会映射成UserView，但是在某个场景下，User对象需要映射到UserCustomizeView，这时候可以使用临时的View映射定制：
+```Java
+ViewMapper defaultViewMapper = getDefaultViewMapper();
+OverrideViewMapper overrideViewMapper = new OverrideViewMapper<>(defaultViewMapper) //
+	.addMapper(User.class, (user, buildContext) -> new UserCustmoizeView(user));
+
+List<View> views = overrideViewMapper.map(userList);
+```
 
 ## 注意事项
 
@@ -297,3 +365,20 @@ ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildConte
 ModelBuilder在声明时只定义构建过程中各个元素的依赖关系，声明顺序不会影响到构建顺序。而构建过程是一个查找-构建的过程。每次循环会把当前未完成构建的对象，依次执行﹝抽出id﹞、﹝抽出value﹞和﹝构建value﹞三部操作。
 
 每次产生的新的value会在下一轮构建时重复进行。直到没有新的对象被构建出来为止。
+
+### 为什么不提供构建对象的回填机制
+
+考虑最开始的例子：Post有一个getAuthorUserId()方法，返回作者的id。如果需要对象回填的话，就需要额外提供如下方法：
+```Java
+public User getAuthor();
+public void setAuthor(User user);
+```
+这样，Post就可能存在两个状态：回填前，getAuthor()方法是无效的，而回填后，getAuthor()才可用。这会给后续使用带来很多问题。
+
+另外，回填操作其实是一个相当消耗资源的事情，使用上下文查找其实是把回填操作lazy化（在需要的使用，调用getter时才会查找）。
+
+当然，其实回填操作也可以自己去实现。所以本组件就没有提供这样的机制。
+
+### 为什么使用编程式而不是声明式？
+
+因为我讨厌写配置文件，越复杂的事情，配置文件往往比编程要复杂的多。如果你喜欢配置文件，可以帮我实现一个，也不复杂：）
