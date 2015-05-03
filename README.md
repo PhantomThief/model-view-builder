@@ -1,4 +1,4 @@
-model-view-builder
+model-view-builder [![Build Status](https://travis-ci.org/PhantomThief/model-view-builder.svg)](https://travis-ci.org/PhantomThief/model-view-builder)
 =======================
 
 对象依赖构建以及model到view的映射
