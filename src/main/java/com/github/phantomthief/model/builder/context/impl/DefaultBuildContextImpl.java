@@ -36,8 +36,8 @@ public class DefaultBuildContextImpl implements BuildContext {
     @SuppressWarnings("unchecked")
     @Override
     public <K> Set<K> getIds(String type) {
-        return (Set<K>) ids
-                .computeIfAbsent(type, i -> Collections.synchronizedSet(new HashSet<>()));
+        return (Set<K>) ids.computeIfAbsent(type,
+                i -> Collections.synchronizedSet(new HashSet<>()));
     }
 
     /* (non-Javadoc)
@@ -74,8 +74,9 @@ public class DefaultBuildContextImpl implements BuildContext {
     /** {@inheritDoc} */
     @Override
     public <K, V> void putData(String type, K id, V value) {
-        getData(type).put(id, value);
-
+        if (value != null) {
+            getData(type).put(id, value);
+        }
     }
 
     /* (non-Javadoc)
@@ -84,8 +85,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /** {@inheritDoc} */
     @Override
     public <K, V> void putDatas(String type, Map<K, V> values) {
-        getData(type).putAll(values);
-
+        values.forEach((id, value) -> putData(type, id, value));
     }
 
     /* (non-Javadoc)
