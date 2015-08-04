@@ -85,7 +85,10 @@ public class DefaultBuildContextImpl implements BuildContext {
     /** {@inheritDoc} */
     @Override
     public <K, V> void putDatas(String type, Map<K, V> values) {
-        values.forEach((id, value) -> putData(type, id, value));
+        Map<Object, Object> dataMap = getData(type);
+        values.entrySet().stream() //
+                .filter(entry -> entry.getValue() != null) //
+                .forEach(entry -> dataMap.put(entry.getKey(), entry.getValue()));
     }
 
     /* (non-Javadoc)
