@@ -3,6 +3,8 @@
  */
 package com.github.phantomthief.model.builder.context.impl;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -10,7 +12,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.github.phantomthief.model.builder.context.BuildContext;
@@ -117,8 +118,7 @@ public class DefaultBuildContextImpl implements BuildContext {
     /** {@inheritDoc} */
     @Override
     public Set<String> allValueTypes() {
-        return Stream.of(ids.keySet(), datas.keySet()).flatMap(Set::stream)
-                .collect(Collectors.toSet());
+        return Stream.of(ids.keySet(), datas.keySet()).flatMap(Set::stream).collect(toSet());
     }
 
     /** {@inheritDoc} */

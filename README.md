@@ -63,7 +63,7 @@ public Map<Integer, Boolean> isUserFollowingUsers(int userId, Collection<Integer
 <dependency>
     <groupId>com.github.phantomthief</groupId>
 	<artifactId>model-view-builder</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 

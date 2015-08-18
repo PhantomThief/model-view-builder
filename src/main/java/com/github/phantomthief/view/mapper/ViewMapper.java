@@ -3,9 +3,10 @@
  */
 package com.github.phantomthief.view.mapper;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author w.vela
@@ -25,8 +26,7 @@ public interface ViewMapper {
      * @return
      */
     public default <M, V, B> List<V> map(Collection<M> models, B buildContext) {
-        return models.stream().map(i -> this.<M, V, B> map(i, buildContext))
-                .collect(Collectors.toList());
+        return models.stream().map(i -> this.<M, V, B> map(i, buildContext)).collect(toList());
     }
 
 }
