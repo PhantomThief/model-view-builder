@@ -3,7 +3,11 @@
  */
 package com.github.phantomthief.model.builder.impl;
 
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -108,8 +112,8 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
 
             // 尝试提取所有values
             for (Object t : sources) {
-                Collection<Function<?, Map<?, ?>>> thisValueExtractors = getValueExtractors(t
-                        .getClass());
+                Collection<Function<?, Map<?, ?>>> thisValueExtractors = getValueExtractors(
+                        t.getClass());
                 for (Function valueExtractor : thisValueExtractors) {
                     Map<?, ?> valueMap = (Map<?, ?>) valueExtractor.apply(t);
                     if (valueMap != null) {
@@ -213,7 +217,8 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
                         toValueType = valueType;
                     }
                     if (thisIds.removeAll(thisBuildContext.getData(toValueType).keySet())) {
-                        logger.trace("第[{}]次构建，构建数据EX，忽略value[{}]，剩余id:{}", i, toValueType, thisIds);
+                        logger.trace("第[{}]次构建，构建数据EX，忽略value[{}]，剩余id:{}", i, toValueType,
+                                thisIds);
                     }
                     if (thisIds.isEmpty()) {
                         continue;
@@ -319,6 +324,27 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
         valueExtractorIdNameMap.put(valueExtractor, idValueType.getName());
         valueExtractorValueNameMap.put(valueExtractor, idValueType.getName());
         return this;
+    }
+
+    public <E, K, V> DefaultModelBuilderImpl<B> addMultiValueExtractor(Class<E> modelType,
+            Function<E, Collection<V>> valueExtractor, Function<V, K> idExtractor,
+            Class<?> idValueType) {
+        return addValueExtractor(modelType, e -> {
+            Collection<V> values = valueExtractor.apply(e);
+            if (values == null) {
+                return null;
+            } else {
+                return values.stream().collect(toMap(idExtractor::apply, identity()));
+            }
+        } , idValueType);
+    }
+
+    public <E, K, V> DefaultModelBuilderImpl<B> addSingleValueExtractor(Class<E> modelType,
+            Function<E, V> valueExtractor, Function<V, K> idExtractor, Class<?> idValueType) {
+        return addValueExtractor(modelType, e -> {
+            V model = valueExtractor.apply(e);
+            return Collections.singletonMap(idExtractor.apply(model), model);
+        } , idValueType);
     }
 
     /**
@@ -469,8 +495,8 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
         return this;
     }
 
-    public static <B extends BuildContext> DefaultModelBuilderImpl<B> merge(
-            @SuppressWarnings("unchecked") DefaultModelBuilderImpl<B>... other) {
+    public static <B extends BuildContext> DefaultModelBuilderImpl<B>
+            merge(@SuppressWarnings("unchecked") DefaultModelBuilderImpl<B>... other) {
         DefaultModelBuilderImpl<B> result = new DefaultModelBuilderImpl<>();
         if (other != null) {
             for (DefaultModelBuilderImpl<B> builder : other) {
@@ -512,8 +538,8 @@ public class DefaultModelBuilderImpl<B extends BuildContext> implements ModelBui
     @Override
     public String toString() {
         return "DefaultModelBuilderImpl [idExtractors=" + idExtractors + ", functionValueMap="
-                + functionValueMap + ", dataBuilders=" + dataBuilders + ", buildToMap="
-                + buildToMap + ", valueExtractors=" + valueExtractors + ", idExtractorsCache="
+                + functionValueMap + ", dataBuilders=" + dataBuilders + ", buildToMap=" + buildToMap
+                + ", valueExtractors=" + valueExtractors + ", idExtractorsCache="
                 + idExtractorsCache + ", valueExtractorsCache=" + valueExtractorsCache + "]";
     }
 
