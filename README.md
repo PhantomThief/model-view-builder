@@ -63,7 +63,7 @@ public Map<Integer, Boolean> isUserFollowingUsers(int userId, Collection<Integer
 <dependency>
     <groupId>com.github.phantomthief</groupId>
 	<artifactId>model-view-builder</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -81,9 +81,8 @@ value命名空间存储的是构建过程中的具体实体数据（比如上面
 
 构建器ModelBuilder声明时使用下面的方式：
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildContext>()
+ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 	 // 这里使用流式定义modelBuilder的依赖以及构建器之类的……
-	 .build(); // 最终使用build()方法完成定义
 ```
 
 完成声明后，ModelBuilder对象就可以使用了（这个对象建议复用）。
@@ -113,17 +112,15 @@ int postComment = postCommentMap.getOrDefault(specifyPostId, 0);
 上面例子中的使用场景：把Post.getAuthorUserId()返回的数据放到id命名空间User.class
 
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	.addIdExtractor(Post.class, Post::getAuthorUserId, User.class) //post.getAuthoUserId()返回值放到User.class的id命名空间中
- 	.build();
+ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+	.on(Post.class).extractId(Post::getAuthorUserId).to(User.class) //post.getAuthoUserId()返回值放到User.class的id命名空间中
 ```
 
 ##### 从已有的value抽取value和id
 
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	.addValueExtractor(Post.class, i -> Collections.singletonMap(i.getId(), i), Post.class) // post对象放到value为Post.class的命名空间，同时Post.getId()
- 	.build();
+ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+	.on(Post.class).self(Post::getId) // post对象放到value为Post.class的命名空间，同时Post.getId()
 ```
 
 如果遇到没有完成构建的Post对象，会直接把Post对象放到Post.class的value命名空间中，并把Post.getId()放到Post.class的id命名空间中
@@ -131,10 +128,9 @@ ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildConte
 ##### 从id命名空间构建数据到value命名空间
 
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	.addDataBuilder(User.class, userService::getUserByIds) // 把id命名空间User.class用userService.getUserByIds()方法构建数据，并回存到value命名空间User.class
-	.addDataBuilder(Post.class, postService::getPostCommentCount, "postComments") // 把id命名空间Post.class的数据用postService.getPostCommentCount()方法构建，构建结果存入postComments的value命名空间
-	.build();
+ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+	.build(User.class).toSelf(userService::getUserByIds) // 把id命名空间User.class用userService.getUserByIds()方法构建数据，并回存到value命名空间User.class
+	.build(Post.class).<Integer> using(postService::getPostCommentCount).to("postComments") // 把id命名空间Post.class的数据用postService.getPostCommentCount()方法构建，构建结果存入postComments的value命名空间
 ```
 
 ### ViewMapper的使用
