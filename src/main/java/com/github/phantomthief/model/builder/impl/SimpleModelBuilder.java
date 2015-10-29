@@ -19,6 +19,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -50,8 +52,10 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     private final SetMultimap<Object, KeyPair<BiFunction<B, Collection<Object>, Map<Object, Object>>>> valueBuilders = HashMultimap
             .create();
 
+    private final ConcurrentMap<Class<?>, Set<Class<?>>> cachedSuperTypes = new ConcurrentHashMap<>();
+
     @Override
-    public void build(Iterable<?> sources, B buildContext) {
+    public void buildMulti(Iterable<?> sources, B buildContext) {
         if (sources == null) {
             return;
         }
@@ -187,17 +191,17 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             this.objType = objType;
         }
 
-        public ExtractingId extractId(Function<E, Object> idExtractor) {
+        public ExtractingId id(Function<E, Object> idExtractor) {
             return new ExtractingId(idExtractor);
         }
 
-        public ExtractingValue extractValue(Function<E, Object> valueExtractor) {
+        public ExtractingValue value(Function<E, Object> valueExtractor) {
             return new ExtractingValue(valueExtractor);
         }
 
-        public SimpleModelBuilder<B> self(Function<E, Object> idExtractor) {
-            return new ExtractingValue(i -> i).id((Function<Object, Object>) idExtractor)
-                    .to(objType);
+        public <V> ExtractingValue value(Function<E, Iterable<V>> valueExtractor,
+                Function<V, Object> idExtractor) {
+            return new ExtractingValue(valueExtractor).id(idExtractor);
         }
 
         public final class ExtractingValue {
@@ -205,8 +209,8 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             private final Function<E, Object> valueExtractor;
             private Function<Object, Object> idExtractor;
 
-            private ExtractingValue(Function<E, Object> valueExtractor) {
-                this.valueExtractor = valueExtractor;
+            private ExtractingValue(Function<E, ?> valueExtractor) {
+                this.valueExtractor = (Function<E, Object>) valueExtractor;
             }
 
             public <K> ExtractingValue id(Function<K, Object> idExtractor) {
@@ -233,7 +237,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
                             if (rawValue instanceof Map) {
                                 value = (Map<Object, Object>) rawValue;
                             } else {
-                                // TODO log error or warn
+                                logger.warn("invalid value extractor for:{}->{}", obj, rawValue);
                                 value = Collections.emptyMap();
                             }
                         }
@@ -284,23 +288,23 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
         }
 
         @SuppressWarnings("rawtypes")
-        public <K> BuildingValue<K> using(Function<Collection<K>, Map<K, ?>> valueBuilder) {
+        public <K> BuildingValue<K> by(Function<Collection<K>, Map<K, ?>> valueBuilder) {
             return new BuildingValue<K>((c, ids) -> (Map) valueBuilder.apply(ids));
         }
 
         @SuppressWarnings("rawtypes")
-        public <K> BuildingValue<K> using(BiFunction<B, Collection<K>, Map<K, ?>> valueBuilder) {
+        public <K> BuildingValue<K> by(BiFunction<B, Collection<K>, Map<K, ?>> valueBuilder) {
             return new BuildingValue<K>((BiFunction) valueBuilder);
         }
 
-        public <K> SimpleModelBuilder<B>
+        /*public <K> SimpleModelBuilder<B>
                 toSelf(BiFunction<B, Collection<K>, Map<K, ?>> valueBuilder) {
             return using(valueBuilder).to(idNamespace);
         }
-
+        
         public <K> SimpleModelBuilder<B> toSelf(Function<Collection<K>, Map<K, ?>> valueBuilder) {
             return using(valueBuilder).to(idNamespace);
-        }
+        }*/
 
         public final class BuildingValue<K> {
 
@@ -323,16 +327,34 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
         return new OnBuilder<>(type);
     }
 
+    public <E> SimpleModelBuilder<B> self(Class<E> type, Function<E, Object> idExtractor) {
+        SimpleModelBuilder<B>.OnBuilder<E> onBuilder = new OnBuilder<>(type);
+        return onBuilder.new ExtractingValue(i -> i).id((Function<Object, Object>) idExtractor)
+                .to(type);
+    }
+
     public BuildingBuilder build(Object idNamespace) {
         return new BuildingBuilder(idNamespace);
     }
 
+    public <K> SimpleModelBuilder<B> build(Object idNamespace,
+            BiFunction<B, Collection<K>, Map<K, ?>> valueBuilder) {
+        return build(idNamespace).by(valueBuilder).to(idNamespace);
+    }
+
+    public <K> SimpleModelBuilder<B> build(Object idNamespace,
+            Function<Collection<K>, Map<K, ?>> valueBuilder) {
+        return build(idNamespace).by(valueBuilder).to(idNamespace);
+    }
+
     private Set<Class<?>> getAllSuperTypes(Class<?> iface) {
-        Set<Class<?>> classes = new HashSet<>();
-        classes.add(iface);
-        classes.addAll(ClassUtils.getAllInterfaces(iface));
-        classes.addAll(ClassUtils.getAllSuperclasses(iface));
-        return classes;
+        return cachedSuperTypes.computeIfAbsent(iface, t -> {
+            Set<Class<?>> classes = new HashSet<>();
+            classes.add(t);
+            classes.addAll(ClassUtils.getAllInterfaces(t));
+            classes.addAll(ClassUtils.getAllSuperclasses(t));
+            return classes;
+        });
     }
 
     private <T> Stream<T> stream(Iterable<T> iterable) {

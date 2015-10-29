@@ -13,9 +13,9 @@ import com.github.phantomthief.model.builder.context.BuildContext;
  */
 public interface ModelBuilder<B extends BuildContext> {
 
-    public void build(Iterable<?> sources, B buildContext);
+    public void buildMulti(Iterable<?> sources, B buildContext);
 
     public default void buildSingle(Object one, B buildContext) {
-        build(Collections.singleton(one), buildContext);
+        buildMulti(Collections.singleton(one), buildContext);
     }
 }

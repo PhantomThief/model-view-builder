@@ -90,7 +90,7 @@ ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 每次构建对象时，用这样的调用：
 ```Java
 BuildContext buildContext = new BuildContext();  // 声明一个构建上下文，所有构建的结果都会存入这个上下文对象中
-modelBuilder.build(postList, buildContext); // 执行构建操作
+modelBuilder.buildMulti(postList, buildContext); // 执行构建操作
 ```
 
 构建完成后，所有构建结果都会在上下文buildContext对象中，可以使用这样的语法获得数据：
@@ -113,14 +113,14 @@ int postComment = postCommentMap.getOrDefault(specifyPostId, 0);
 
 ```Java
 ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
-	.on(Post.class).extractId(Post::getAuthorUserId).to(User.class) //post.getAuthoUserId()返回值放到User.class的id命名空间中
+	.on(Post.class).id(Post::getAuthorUserId).to(User.class) //post.getAuthoUserId()返回值放到User.class的id命名空间中
 ```
 
 ##### 从已有的value抽取value和id
 
 ```Java
 ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
-	.on(Post.class).self(Post::getId) // post对象放到value为Post.class的命名空间，同时Post.getId()
+	.self(Post.class, Post::getId) // post对象放到value为Post.class的命名空间，同时Post.getId()
 ```
 
 如果遇到没有完成构建的Post对象，会直接把Post对象放到Post.class的value命名空间中，并把Post.getId()放到Post.class的id命名空间中
@@ -129,8 +129,8 @@ ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 
 ```Java
 ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
-	.build(User.class).toSelf(userService::getUserByIds) // 把id命名空间User.class用userService.getUserByIds()方法构建数据，并回存到value命名空间User.class
-	.build(Post.class).<Integer> using(postService::getPostCommentCount).to("postComments") // 把id命名空间Post.class的数据用postService.getPostCommentCount()方法构建，构建结果存入postComments的value命名空间
+	.build(User.class, userService::getUserByIds) // 把id命名空间User.class用userService.getUserByIds()方法构建数据，并回存到value命名空间User.class
+	.build(Post.class).<Integer> by(postService::getPostCommentCount).to("postComments") // 把id命名空间Post.class的数据用postService.getPostCommentCount()方法构建，构建结果存入postComments的value命名空间
 ```
 
 ### ViewMapper的使用
@@ -202,9 +202,8 @@ public class MyBuildContext extends BuildContext {
 
 然后在声明ModelBuilder时，可以使用MyBuildContext代替默认的BuildContext：
 ```Java
-ModelBuilder<MyBuildContext> modelBuilder = new DefaultModelBuilderImpl<MyBuildContext>()
-	.addDataBuilderEx(Post.class, (MyBuildContext buildContext, postIds) -> postService.isUserFavoritedPosts(buildContext.getVisitor(), postIds), "userFavoritesPosts");
-	.build();
+ModelBuilder<MyBuildContext> modelBuilder = new SimpleModelBuilder<MyBuildContext>()
+	.build(Post.class).<Integer> by((buildContext, postIds) -> postService.isUserFavoritedPosts(buildContext.getVisitor(), postIds)).to("userFavoritesPosts");
 ```
 
 使用构建器时：
@@ -213,7 +212,7 @@ int visitor = 999;
 MyBuildContext myBuildContext = new MyBuildContext();
 myBuildContext.setVisitor(visitor);
 
-modelBuilder.build(posts, myBuildContext);
+modelBuilder.buildMulti(posts, myBuildContext);
 ```
 
 ### Model中可以直接抽出其它Model的情况
@@ -234,14 +233,8 @@ public class Post {
 
 那么依赖声明时可以这样：
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	.addValueExtractor(Post.class, post -> {
-		Map<Integer, User> userMap = new HashMap<>();
-		userMap.put(post.getAuthor().getId(), post.getAuthor());
-		post.getAtUsers().forEach(user -> userMap.put(user.getId(), user));
-		return userMap;
-	}, User.class)
-	.build();
+ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+	.on(Post.class).value(Post::getAuthor).id(User::getId).to(User.class);
 ```
 
 ### 基于反射的ViewMapper声明
@@ -296,27 +289,6 @@ public static final ViewMapper scan(String pkg, Set<Class<?>> ignoreViews) {
 }
 ```
 
-### 使用merge方式简化ModelBuilder的维护
-
-当一个项目非常庞大时，ModelBuilder依赖会变得异常庞大。这时候，可以把依赖按照业务拆分：
-```Java
-DefaultModelBuilderImpl<BuildContext> userModelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	// ...一些依赖的定义
-	.build();
-	
-DefaultModelBuilderImpl<BuildContext> postModelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	// ...一些依赖的定义
-	.build();
-	
-DefaultModelBuilderImpl<BuildContext> combineModelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	.build();
-
-combineModelBuilder.merge(userModelBuilder);
-combineModelBuilder.merge(postModelBuilder);
-```
-
-注意，现阶段，merge操作只是简单的对依赖关系的复制。
-
 ### 使用OverrideViewMapper进行View映射的剪裁和定制
 
 特定场景下，可能强制覆盖某些Model到View的映射关系，比如正常场景下，User对象会映射成UserView，但是在某个场景下，User对象需要映射到UserCustomizeView，这时候可以使用临时的View映射定制：
@@ -350,7 +322,7 @@ public interface HasAuthor {
 那么在ModelBuilder声明依赖关系时，可以直接声明这个接口依赖：
 ```Java
 ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	.addIdExtractor(HasAuthor.class, HasAuthor::getAuthorUserId, User.class)
+	.on(HasAuthor.class).id(HasAuthor::getAuthorUserId).to(User.class)
  	.build();
 ```
 

@@ -126,18 +126,17 @@ public class ModelBuilderTest {
     public void setup() {
         testDAO = new TestDAO();
         builder = new SimpleModelBuilder<TestBuildContext>() //
-                .on(User.class).self(User::getId) //
-                .on(Post.class).self(Post::getId) //
-                .on(Comment.class).self(Comment::getId) //
-                .on(Comment.class).extractId(Comment::getAtUserIds).to(User.class) //
-                .on(HasUser.class).extractId(HasUser::getUserId).to(User.class) //
-                .on(Post.class).extractValue(Post::comments).<Comment> id(Comment::getId)
-                .to(Comment.class) //
-                .build(User.class).toSelf(testDAO::getUsers) //
-                .build(Post.class).toSelf(testDAO::getPosts) //
-                .build(Comment.class).toSelf(testDAO::getComments) //
+                .self(User.class, User::getId) //
+                .self(Post.class, Post::getId) //
+                .self(Comment.class, Comment::getId) //
+                .on(Comment.class).id(Comment::getAtUserIds).to(User.class) //
+                .on(HasUser.class).id(HasUser::getUserId).to(User.class) //
+                .on(Post.class).value(Post::comments, Comment::getId).to(Comment.class) //
+                .build(User.class, testDAO::getUsers) //
+                .build(Post.class, testDAO::getPosts) //
+                .build(Comment.class, testDAO::getComments) //
                 .build(User.class)
-                .<Integer> using((context, ids) -> testDAO.isFollowing(context.getVisitorId(), ids))
+                .<Integer> by((context, ids) -> testDAO.isFollowing(context.getVisitorId(), ids))
                 .to("isFollowing");
         System.out.println("builder===>");
         System.out.println(builder);
@@ -155,7 +154,7 @@ public class ModelBuilderTest {
         logger.info("sources===>");
         sources.forEach(o -> logger.info("{}", o));
         testDAO.assertOn();
-        builder.build(sources, buildContext);
+        builder.buildMulti(sources, buildContext);
         logger.info("buildContext===>");
         logger.info("{}", buildContext);
 
