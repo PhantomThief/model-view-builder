@@ -52,7 +52,8 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     private final SetMultimap<Object, KeyPair<BiFunction<B, Collection<Object>, Map<Object, Object>>>> valueBuilders = HashMultimap
             .create();
 
-    private final ConcurrentMap<Class<?>, Set<Class<?>>> cachedSuperTypes = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Set<Object>>>>> cachedIdExtractors = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Map<Object, Object>>>>> cachedValueExtractors = new ConcurrentHashMap<>();
 
     @Override
     public void buildMulti(Iterable<?> sources, B buildContext) {
@@ -118,23 +119,23 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
         if (obj == null) {
             return;
         }
-        getAllSuperTypes(obj.getClass()).forEach(objType -> {
-            logger.trace("try to extract value for:{}, using type:{}", obj, objType);
-            valueExtractors.get(objType).forEach(valueExtractor -> {
-                KeyPair<Map<Object, Object>> values = valueExtractor.apply(obj);
-                Map<Object, Object> filtered = filterValueMap(values, buildContext);
-                logger.trace("value extract for obj:{}, to:{}, extracted:{}, filtered:{}", obj,
-                        values.getKey(), values.getValue(), filtered);
-                valuesMap.merge(values.getKey(), filtered, MergeUtils::merge);
-            });
-        });
-        getAllSuperTypes(obj.getClass()).forEach(objType -> {
-            idExtractors.get(objType).forEach(idExtractor -> {
-                KeyPair<Set<Object>> ids = idExtractor.apply(obj);
-                idsMap.merge(ids.getKey(), filterIdSet(ids, buildContext, valuesMap),
-                        MergeUtils::merge);
-            });
-        });
+        cachedValueExtractors
+                .computeIfAbsent(obj.getClass(),
+                        t -> getAllSuperTypes(t).stream()
+                                .flatMap(i -> valueExtractors.get(i).stream()).collect(toSet()))
+                .forEach(valueExtractor -> {
+                    KeyPair<Map<Object, Object>> values = valueExtractor.apply(obj);
+                    Map<Object, Object> filtered = filterValueMap(values, buildContext);
+                    valuesMap.merge(values.getKey(), filtered, MergeUtils::merge);
+                });
+        cachedIdExtractors
+                .computeIfAbsent(obj.getClass(), t -> getAllSuperTypes(t).stream()
+                        .flatMap(i -> idExtractors.get(i).stream()).collect(toSet()))
+                .forEach(idExtractor -> {
+                    KeyPair<Set<Object>> ids = idExtractor.apply(obj);
+                    idsMap.merge(ids.getKey(), filterIdSet(ids, buildContext, valuesMap),
+                            MergeUtils::merge);
+                });
     }
 
     private Set<Object> filterIdSet(KeyPair<Set<Object>> keyPair, B buildContext,
@@ -244,6 +245,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
                     }
                     return new KeyPair<>(valueNamespace, value);
                 });
+                cachedValueExtractors.clear();
                 return SimpleModelBuilder.this;
             }
         }
@@ -271,6 +273,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
                     }
                     return new KeyPair<Set<Object>>(idNamespace, ids);
                 });
+                cachedIdExtractors.clear();
                 return SimpleModelBuilder.this;
             }
         }
@@ -348,13 +351,11 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     }
 
     private Set<Class<?>> getAllSuperTypes(Class<?> iface) {
-        return cachedSuperTypes.computeIfAbsent(iface, t -> {
-            Set<Class<?>> classes = new HashSet<>();
-            classes.add(t);
-            classes.addAll(ClassUtils.getAllInterfaces(t));
-            classes.addAll(ClassUtils.getAllSuperclasses(t));
-            return classes;
-        });
+        Set<Class<?>> classes = new HashSet<>();
+        classes.add(iface);
+        classes.addAll(ClassUtils.getAllInterfaces(iface));
+        classes.addAll(ClassUtils.getAllSuperclasses(iface));
+        return classes;
     }
 
     private <T> Stream<T> stream(Iterable<T> iterable) {
