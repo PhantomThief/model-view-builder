@@ -72,6 +72,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             for (Object object : pendingForBuilding) {
                 extract(object, buildContext, idsMap, valuesMap);
             }
+
             logger.debug("extracted data, id:{}", idsMap);
             logger.debug("extracted data, values:{}", valuesMap);
             valueBuild(idsMap, valuesMap, buildContext);
@@ -114,6 +115,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
                 .collect(toSet());
     }
 
+    // return new found data.
     private void extract(Object obj, B buildContext, Map<Object, Set<Object>> idsMap,
             Map<Object, Map<Object, Object>> valuesMap) {
         if (obj == null) {
@@ -126,6 +128,8 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
                 .forEach(valueExtractor -> {
                     KeyPair<Map<Object, Object>> values = valueExtractor.apply(obj);
                     Map<Object, Object> filtered = filterValueMap(values, buildContext);
+                    idsMap.merge(values.getKey(), new HashSet<>(filtered.keySet()),
+                            MergeUtils::merge);
                     valuesMap.merge(values.getKey(), filtered, MergeUtils::merge);
                 });
         cachedIdExtractors

@@ -7,6 +7,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -26,6 +27,7 @@ import com.github.phantomthief.model.builder.impl.SimpleModelBuilder;
 import com.github.phantomthief.model.builder.model.Comment;
 import com.github.phantomthief.model.builder.model.HasUser;
 import com.github.phantomthief.model.builder.model.Post;
+import com.github.phantomthief.model.builder.model.SubUser;
 import com.github.phantomthief.model.builder.model.User;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -151,6 +153,7 @@ public class ModelBuilderTest {
                 testDAO.getComments(post.getCommentIds()).values().stream().collect(toList())));
         sources.addAll(posts);
         sources.addAll(testDAO.getComments(Arrays.asList(3L)).values());
+        sources.add(new SubUser(98));
         logger.info("sources===>");
         sources.forEach(o -> logger.info("{}", o));
         testDAO.assertOn();
@@ -173,9 +176,18 @@ public class ModelBuilderTest {
                 Comment cmt = (Comment) obj;
                 assertCmt(buildContext, cmt);
             }
+            if (obj instanceof User) {
+                User user = (User) obj;
+                assertUser(buildContext, user);
+            }
         }
+        logger.info("checking nodes.");
+        buildContext.getData(User.class).values().forEach(user -> assertUser(buildContext, user));
         logger.info("fin.");
-        assertTrue(true);
+    }
+
+    private void assertUser(TestBuildContext buildContext, User user) {
+        assertNotNull(buildContext.getData("isFollowing").get(user.getId()));
     }
 
     private void assertCmt(TestBuildContext buildContext, Comment cmt) {
