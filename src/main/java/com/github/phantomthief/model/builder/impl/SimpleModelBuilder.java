@@ -53,7 +53,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     private final SetMultimap<Object, KeyPair<BiFunction<B, Collection<Object>, Map<Object, Object>>>> valueBuilders = HashMultimap
             .create();
     // targetNamespace=>Function<BuildContext, Object>
-    private final Map<Object, Function<BuildContext, Object>> lazyBuilders = new HashMap<>();
+    private final Map<Object, Function<BuildContext, Map<Object, Object>>> lazyBuilders = new HashMap<>();
 
     private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Set<Object>>>>> cachedIdExtractors = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Map<Object, Object>>>>> cachedValueExtractors = new ConcurrentHashMap<>();
@@ -368,25 +368,27 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             this.sourceNamespace = sourceNamespace;
         }
 
-        public <E> LazyFromIdBuilder<E> fromId(BiFunction<B, Collection<E>, Object> builder) {
+        public <K> LazyFromIdBuilder<K> fromId(BiFunction<B, Collection<K>, Map<K, ?>> builder) {
             return new LazyFromIdBuilder<>(builder);
         }
 
-        public <E> LazyFromIdBuilder<E> fromId(Function<Collection<E>, Object> builder) {
+        public <K> LazyFromIdBuilder<K> fromId(Function<Collection<K>, Map<K, ?>> builder) {
             return fromId((buildContext, ids) -> builder.apply(ids));
         }
 
         public final class LazyFromIdBuilder<E> {
 
-            private final BiFunction<B, Collection<E>, Object> builder;
+            private final BiFunction<B, Collection<E>, Map<E, ?>> builder;
 
-            private LazyFromIdBuilder(BiFunction<B, Collection<E>, Object> builder) {
+            private LazyFromIdBuilder(BiFunction<B, Collection<E>, Map<E, ?>> builder) {
                 this.builder = builder;
             }
 
+            @SuppressWarnings("rawtypes")
             public SimpleModelBuilder<B> to(Object targetNamespace) {
-                lazyBuilders.put(targetNamespace, buildContext -> builder.apply((B) buildContext,
-                        (Collection<E>) buildContext.getData(sourceNamespace).keySet()));
+                lazyBuilders.put(targetNamespace,
+                        buildContext -> (Map) builder.apply((B) buildContext,
+                                (Collection<E>) buildContext.getData(sourceNamespace).keySet()));
                 return SimpleModelBuilder.this;
             }
         }
