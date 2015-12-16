@@ -16,5 +16,7 @@ public interface BuildContext {
 
     <K, V> Map<K, V> getData(Object namespace);
 
+    <T> T getLazyNodeData(Object namespace);
+
     void merge(BuildContext buildContext);
 }

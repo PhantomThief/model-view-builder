@@ -7,6 +7,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -63,10 +64,18 @@ public class ModelBuilderTest {
             followingMap.put(1, 2);
         }
 
+        private final Multimap<Integer, Integer> fansMap = HashMultimap.create();
+
+        {
+            fansMap.put(1, 5);
+            fansMap.put(1, 99);
+        }
+
         private Set<Integer> retreievedUserIds;
         private Set<Long> retreievedPostIds;
         private Set<Long> retreievedCommentIds;
         private Set<Integer> retrievedFollowUserIds;
+        private Set<Integer> retrievedFansUserIds;
 
         public Map<Integer, User> getUsers(Collection<Integer> ids) {
             if (retreievedUserIds != null) {
@@ -112,12 +121,24 @@ public class ModelBuilderTest {
             return ids.stream().collect(toMap(identity(), followings::contains));
         }
 
+        public Map<Integer, Boolean> isFans(int fromUserId, Collection<Integer> ids) {
+            if (retrievedFansUserIds != null) {
+                logger.info("try to get fans:{}->{}", fromUserId, ids);
+                for (Integer id : ids) {
+                    assertTrue(retrievedFansUserIds.add(id));
+                }
+            }
+            Collection<Integer> fans = fansMap.get(fromUserId);
+            return ids.stream().collect(toMap(identity(), fans::contains));
+        }
+
         void assertOn() {
             logger.info("assert on.");
             retreievedUserIds = new HashSet<>();
             retreievedPostIds = new HashSet<>();
             retreievedCommentIds = new HashSet<>();
             retrievedFollowUserIds = new HashSet<>();
+            retrievedFansUserIds = new HashSet<>();
         }
     }
 
@@ -139,7 +160,10 @@ public class ModelBuilderTest {
                 .build(Comment.class, testDAO::getComments) //
                 .build(User.class)
                 .<Integer> by((context, ids) -> testDAO.isFollowing(context.getVisitorId(), ids))
-                .to("isFollowing");
+                .to("isFollowing") //
+                .onLazy(User.class)
+                .<Integer> fromId((context, ids) -> testDAO.isFans(context.getVisitorId(), ids))
+                .to("isFans");
         System.out.println("builder===>");
         System.out.println(builder);
     }
@@ -160,6 +184,16 @@ public class ModelBuilderTest {
         builder.buildMulti(sources, buildContext);
         logger.info("buildContext===>");
         logger.info("{}", buildContext);
+
+        assertTrue(testDAO.retrievedFansUserIds.isEmpty());
+
+        Map<Integer, Boolean> isFans = buildContext.getLazyNodeData("isFans");
+        logger.info("isFans:{}", isFans);
+        isFans.forEach((userId, value) -> assertEquals(
+                testDAO.fansMap.get(buildContext.getVisitorId()).contains(userId), value));
+        assertFalse(testDAO.retrievedFansUserIds.isEmpty());
+        logger.info("retry fans");
+        buildContext.getLazyNodeData("isFans");
 
         // try assert
         for (Object obj : sources) {

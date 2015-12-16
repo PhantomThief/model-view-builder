@@ -30,6 +30,7 @@ import org.apache.commons.lang3.ClassUtils;
 
 import com.github.phantomthief.model.builder.ModelBuilder;
 import com.github.phantomthief.model.builder.context.BuildContext;
+import com.github.phantomthief.model.builder.context.impl.SimpleBuildContext;
 import com.github.phantomthief.model.builder.util.MergeUtils;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
@@ -51,6 +52,8 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     // idNamespace=>(valueNamespace, ids->values)
     private final SetMultimap<Object, KeyPair<BiFunction<B, Collection<Object>, Map<Object, Object>>>> valueBuilders = HashMultimap
             .create();
+    // targetNamespace=>Function<BuildContext, Object>
+    private final Map<Object, Function<BuildContext, Object>> lazyBuilders = new HashMap<>();
 
     private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Set<Object>>>>> cachedIdExtractors = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Map<Object, Object>>>>> cachedValueExtractors = new ConcurrentHashMap<>();
@@ -60,6 +63,12 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
         if (sources == null) {
             return;
         }
+        if (buildContext instanceof SimpleBuildContext) {
+            SimpleBuildContext simpleBuildContext = (SimpleBuildContext) buildContext;
+            lazyBuilders.forEach((targetNamespace, valueHolder) -> simpleBuildContext
+                    .setupLazyNodeData(targetNamespace, valueHolder));
+        }
+
         Set<Object> pendingForBuilding = stream(sources).collect(toSet());
 
         while (!pendingForBuilding.isEmpty()) {
@@ -304,15 +313,6 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             return new BuildingValue<K>((BiFunction) valueBuilder);
         }
 
-        /*public <K> SimpleModelBuilder<B>
-                toSelf(BiFunction<B, Collection<K>, Map<K, ?>> valueBuilder) {
-            return using(valueBuilder).to(idNamespace);
-        }
-        
-        public <K> SimpleModelBuilder<B> toSelf(Function<Collection<K>, Map<K, ?>> valueBuilder) {
-            return using(valueBuilder).to(idNamespace);
-        }*/
-
         public final class BuildingValue<K> {
 
             private final BiFunction<B, Collection<K>, Map<K, Object>> valueBuilderFunction;
@@ -352,6 +352,44 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     public <K> SimpleModelBuilder<B> build(Object idNamespace,
             Function<Collection<K>, Map<K, ?>> valueBuilder) {
         return build(idNamespace).by(valueBuilder).to(idNamespace);
+    }
+
+    // builder.onLazy(UserCache.class).fromId(ids->dao.build(ids)).to("test");
+
+    public LazyBuilder onLazy(Object sourceNamespace) {
+        return new LazyBuilder(sourceNamespace);
+    }
+
+    public final class LazyBuilder {
+
+        private final Object sourceNamespace;
+
+        private LazyBuilder(Object sourceNamespace) {
+            this.sourceNamespace = sourceNamespace;
+        }
+
+        public <E> LazyFromIdBuilder<E> fromId(BiFunction<B, Collection<E>, Object> builder) {
+            return new LazyFromIdBuilder<>(builder);
+        }
+
+        public <E> LazyFromIdBuilder<E> fromId(Function<Collection<E>, Object> builder) {
+            return fromId((buildContext, ids) -> builder.apply(ids));
+        }
+
+        public final class LazyFromIdBuilder<E> {
+
+            private final BiFunction<B, Collection<E>, Object> builder;
+
+            private LazyFromIdBuilder(BiFunction<B, Collection<E>, Object> builder) {
+                this.builder = builder;
+            }
+
+            public SimpleModelBuilder<B> to(Object targetNamespace) {
+                lazyBuilders.put(targetNamespace, buildContext -> builder.apply((B) buildContext,
+                        (Collection<E>) buildContext.getData(sourceNamespace).keySet()));
+                return SimpleModelBuilder.this;
+            }
+        }
     }
 
     private Set<Class<?>> getAllSuperTypes(Class<?> iface) {
