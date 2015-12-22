@@ -3,6 +3,7 @@
  */
 package com.github.phantomthief.model.builder;
 
+import static com.github.phantomthief.model.builder.impl.LazyBuilder.on;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -159,11 +160,15 @@ public class ModelBuilderTest {
                 .build(Post.class, testDAO::getPosts) //
                 .build(Comment.class, testDAO::getComments) //
                 .build(User.class)
-                .<Integer> by((context, ids) -> testDAO.isFollowing(context.getVisitorId(), ids))
+
+                .by((TestBuildContext context, Collection<Integer> ids) -> testDAO
+                        .isFollowing(context.getVisitorId(), ids))
                 .to("isFollowing") //
-                .onLazy(User.class)
-                .<Integer> fromId((context, ids) -> testDAO.isFans(context.getVisitorId(), ids))
-                .to("isFans");
+
+                .lazy(on(User.class, //
+                        (TestBuildContext context, Collection<Integer> ids) -> testDAO
+                                .isFans(context.getVisitorId(), ids),
+                        "isFans"));
         System.out.println("builder===>");
         System.out.println(builder);
     }

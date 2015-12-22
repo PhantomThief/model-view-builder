@@ -356,42 +356,20 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
 
     // builder.onLazy(UserCache.class).fromId(ids->dao.build(ids)).to("test");
 
-    public LazyBuilder onLazy(Object sourceNamespace) {
-        return new LazyBuilder(sourceNamespace);
+    @SuppressWarnings("rawtypes")
+    public SimpleModelBuilder<B> lazy(Lazy lazy) {
+        lazyBuilders.put(lazy.targetNamespace(), buildContext -> (Map) ((BiFunction) lazy.builder())
+                .apply(buildContext, buildContext.getData(lazy.sourceNamespace()).keySet()));
+        return this;
     }
 
-    public final class LazyBuilder {
+    interface Lazy {
 
-        private final Object sourceNamespace;
+        Object sourceNamespace();
 
-        private LazyBuilder(Object sourceNamespace) {
-            this.sourceNamespace = sourceNamespace;
-        }
+        Object targetNamespace();
 
-        public <K> LazyFromIdBuilder<K> fromId(BiFunction<B, Collection<K>, Map<K, ?>> builder) {
-            return new LazyFromIdBuilder<>(builder);
-        }
-
-        public <K> LazyFromIdBuilder<K> fromId(Function<Collection<K>, Map<K, ?>> builder) {
-            return fromId((buildContext, ids) -> builder.apply(ids));
-        }
-
-        public final class LazyFromIdBuilder<E> {
-
-            private final BiFunction<B, Collection<E>, Map<E, ?>> builder;
-
-            private LazyFromIdBuilder(BiFunction<B, Collection<E>, Map<E, ?>> builder) {
-                this.builder = builder;
-            }
-
-            @SuppressWarnings("rawtypes")
-            public SimpleModelBuilder<B> to(Object targetNamespace) {
-                lazyBuilders.put(targetNamespace,
-                        buildContext -> (Map) builder.apply((B) buildContext,
-                                (Collection<E>) buildContext.getData(sourceNamespace).keySet()));
-                return SimpleModelBuilder.this;
-            }
-        }
+        BiFunction<?, ?, ?> builder();
     }
 
     private Set<Class<?>> getAllSuperTypes(Class<?> iface) {
