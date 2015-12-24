@@ -108,7 +108,9 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
                 Set<Object> needToBuildIds = filterIdSetOnBuild(ids, buildContext, valuesMap,
                         valueNamespace);
                 Map<Object, Object> values = valueBuilder.apply(buildContext, needToBuildIds);
-                valuesMap.merge(valueNamespace, values, MergeUtils::merge);
+                if (values != null) {
+                    valuesMap.merge(valueNamespace, values, MergeUtils::merge);
+                }
             });
         });
     }
