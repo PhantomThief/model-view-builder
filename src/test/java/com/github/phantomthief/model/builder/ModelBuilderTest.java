@@ -25,6 +25,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.github.phantomthief.model.builder.context.impl.SimpleBuildContext;
 import com.github.phantomthief.model.builder.impl.SimpleModelBuilder;
 import com.github.phantomthief.model.builder.model.Comment;
 import com.github.phantomthief.model.builder.model.HasUser;
@@ -192,13 +193,17 @@ public class ModelBuilderTest {
 
         assertTrue(testDAO.retrievedFansUserIds.isEmpty());
 
-        Map<Integer, Boolean> isFans = buildContext.getLazyNodeData("isFans");
+        Map<Integer, Boolean> isFans = buildContext.getData("isFans");
         logger.info("isFans:{}", isFans);
         isFans.forEach((userId, value) -> assertEquals(
                 testDAO.fansMap.get(buildContext.getVisitorId()).contains(userId), value));
         assertFalse(testDAO.retrievedFansUserIds.isEmpty());
         logger.info("retry fans");
-        buildContext.getLazyNodeData("isFans");
+        buildContext.getData("isFans");
+        logger.info("doing merge");
+        buildContext.merge(new SimpleBuildContext());
+        testDAO.retrievedFansUserIds.clear();
+        logger.info("isFans:{}", buildContext.getData("isFans"));
 
         // try assert
         for (Object obj : sources) {

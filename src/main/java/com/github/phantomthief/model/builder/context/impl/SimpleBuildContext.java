@@ -24,32 +24,23 @@ public class SimpleBuildContext implements BuildContext {
 
     private final ConcurrentMap<Object, Map<Object, Object>> datas = new ConcurrentHashMap<>();
 
-    private final ConcurrentMap<Object, Map<Object, Object>> lazyBuiltDatas = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, Supplier<Map<Object, Object>>> lazyBuilders = new ConcurrentHashMap<>();
 
     @Override
     public <K, V> Map<K, V> getData(Object namespace) {
-        return (Map<K, V>) datas.computeIfAbsent(namespace, i -> new ConcurrentHashMap<>());
-    }
-
-    @Override
-    public <K, V> Map<K, V> getLazyNodeData(Object namespace) {
-        return (Map<K, V>) lazyBuiltDatas.computeIfAbsent(namespace, ns -> {
+        return (Map<K, V>) datas.computeIfAbsent(namespace, ns -> {
             Supplier<Map<Object, Object>> supplier = lazyBuilders.get(namespace);
-            if (supplier == null) {
-                throw new IllegalArgumentException("invalid lazy namespace:" + namespace);
+            if (supplier != null) {
+                return supplier.get();
+            } else {
+                return new ConcurrentHashMap<>();
             }
-            return supplier.get();
         });
     }
 
     public void setupLazyNodeData(Object namespace,
             Function<BuildContext, Map<Object, Object>> lazyBuildFunction) {
         lazyBuilders.put(namespace, () -> lazyBuildFunction.apply(this));
-    }
-
-    protected ConcurrentMap<Object, Map<Object, Object>> getDatas() {
-        return datas;
     }
 
     @Override
@@ -60,7 +51,7 @@ public class SimpleBuildContext implements BuildContext {
                     (namespace, values) -> datas.merge(namespace, values, MergeUtils::merge));
             other.lazyBuilders.forEach((targetNamespace, builder) -> lazyBuilders
                     .putIfAbsent(targetNamespace, builder));
-            lazyBuiltDatas.clear();
+            lazyBuilders.keySet().forEach(datas::remove);
         } else {
             throw new UnsupportedOperationException();
         }
