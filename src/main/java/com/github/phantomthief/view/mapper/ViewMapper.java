@@ -13,19 +13,9 @@ import java.util.List;
  */
 public interface ViewMapper {
 
-    /**
-     * @param model
-     * @param buildContext
-     * @return
-     */
-    public <M, V, B> V map(M model, B buildContext);
+    <M, V, B> V map(M model, B buildContext);
 
-    /**
-     * @param models
-     * @param buildContext
-     * @return
-     */
-    public default <M, V, B> List<V> map(Collection<M> models, B buildContext) {
+    default <M, V, B> List<V> map(Collection<M> models, B buildContext) {
         return models.stream().map(i -> this.<M, V, B> map(i, buildContext)).collect(toList());
     }
 

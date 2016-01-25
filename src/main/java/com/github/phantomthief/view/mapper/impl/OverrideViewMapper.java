@@ -19,10 +19,8 @@ import com.github.phantomthief.view.mapper.ViewMapper;
 public class OverrideViewMapper extends ForwardingViewMapper {
 
     private final Map<Class<?>, BiFunction<?, ?, ?>> overrideMappers = new HashMap<>();
+    private final ConcurrentMap<Class<?>, BiFunction<?, ?, ?>> modelTypeCache = new ConcurrentHashMap<>();
 
-    /**
-     * @param delegate
-     */
     public OverrideViewMapper(ViewMapper delegate) {
         super(delegate);
     }
@@ -42,8 +40,6 @@ public class OverrideViewMapper extends ForwardingViewMapper {
             return super.map(model, buildContext);
         }
     }
-
-    private final ConcurrentMap<Class<?>, BiFunction<?, ?, ?>> modelTypeCache = new ConcurrentHashMap<>();
 
     @SuppressWarnings("rawtypes")
     private BiFunction getMapper(Class<?> modelType) {

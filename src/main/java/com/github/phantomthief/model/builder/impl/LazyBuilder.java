@@ -15,7 +15,7 @@ import com.google.common.base.Function;
  */
 public class LazyBuilder {
 
-    public static <B, K> Lazy on(Object sourceNamespace, Function<Collection<K>, Map<K, ?>> builder,
+    public static <K> Lazy on(Object sourceNamespace, Function<Collection<K>, Map<K, ?>> builder,
             Object targetNamespace) {
         return new Lazy() {
 

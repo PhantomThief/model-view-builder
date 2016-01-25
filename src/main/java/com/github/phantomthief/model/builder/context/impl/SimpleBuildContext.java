@@ -47,10 +47,10 @@ public class SimpleBuildContext implements BuildContext {
     public void merge(BuildContext buildContext) {
         if (buildContext instanceof SimpleBuildContext) {
             SimpleBuildContext other = (SimpleBuildContext) buildContext;
-            other.datas.forEach(
-                    (namespace, values) -> datas.merge(namespace, values, MergeUtils::merge));
-            other.lazyBuilders.forEach((targetNamespace, builder) -> lazyBuilders
-                    .putIfAbsent(targetNamespace, builder));
+            other.datas.forEach((namespace, values) -> datas.merge(namespace, values,
+                    MergeUtils::merge));
+            other.lazyBuilders.forEach((targetNamespace, builder) -> lazyBuilders.putIfAbsent(
+                    targetNamespace, builder));
             lazyBuilders.keySet().forEach(datas::remove);
         } else {
             throw new UnsupportedOperationException();
