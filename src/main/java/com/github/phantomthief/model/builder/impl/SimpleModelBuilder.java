@@ -3,6 +3,7 @@
  */
 package com.github.phantomthief.model.builder.impl;
 
+import static com.google.common.collect.HashMultimap.create;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
@@ -37,7 +38,6 @@ import com.github.phantomthief.model.builder.ModelBuilder;
 import com.github.phantomthief.model.builder.context.BuildContext;
 import com.github.phantomthief.model.builder.context.impl.SimpleBuildContext;
 import com.github.phantomthief.model.builder.util.MergeUtils;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 
 /**
@@ -49,14 +49,11 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     private static org.slf4j.Logger logger = getLogger(SimpleModelBuilder.class);
 
     // obj.class=>obj->(namespace,ids)
-    private final SetMultimap<Class<?>, Function<Object, KeyPair<Set<Object>>>> idExtractors = HashMultimap
-            .create();
+    private final SetMultimap<Class<?>, Function<Object, KeyPair<Set<Object>>>> idExtractors = create();
     // obj.class=>obj->(namespace,values)
-    private final SetMultimap<Class<?>, Function<Object, KeyPair<Map<Object, Object>>>> valueExtractors = HashMultimap
-            .create();
+    private final SetMultimap<Class<?>, Function<Object, KeyPair<Map<Object, Object>>>> valueExtractors = create();
     // idNamespace=>(valueNamespace, ids->values)
-    private final SetMultimap<Object, KeyPair<BiFunction<B, Collection<Object>, Map<Object, Object>>>> valueBuilders = HashMultimap
-            .create();
+    private final SetMultimap<Object, KeyPair<BiFunction<B, Collection<Object>, Map<Object, Object>>>> valueBuilders = create();
     // targetNamespace=>Function<BuildContext, Object>
     private final Map<Object, Function<BuildContext, Map<Object, Object>>> lazyBuilders = new HashMap<>();
 
@@ -173,7 +170,6 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             filterValueMap(KeyPair<Map<Object, Object>> keyPair, B buildContext) {
         Map<Object, Object> buildContextData = buildContext.getData(keyPair.getKey());
         return keyPair.getValue().entrySet().stream()
-                //
                 .filter(e -> !buildContextData.containsKey(e.getKey()))
                 .collect(toMap(Entry::getKey, Entry::getValue));
     }
