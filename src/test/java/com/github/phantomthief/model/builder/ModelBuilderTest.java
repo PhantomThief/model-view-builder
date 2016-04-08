@@ -4,6 +4,7 @@
 package com.github.phantomthief.model.builder;
 
 import static com.github.phantomthief.model.builder.impl.LazyBuilder.on;
+import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -28,6 +29,7 @@ import org.junit.Test;
 import com.github.phantomthief.model.builder.context.impl.SimpleBuildContext;
 import com.github.phantomthief.model.builder.impl.SimpleModelBuilder;
 import com.github.phantomthief.model.builder.model.Comment;
+import com.github.phantomthief.model.builder.model.Fake;
 import com.github.phantomthief.model.builder.model.HasUser;
 import com.github.phantomthief.model.builder.model.Post;
 import com.github.phantomthief.model.builder.model.SubUser;
@@ -84,7 +86,16 @@ public class ModelBuilderTest {
 
                 .lazy(on(User.class, //
                         (TestBuildContext context, Collection<Integer> ids) -> testDAO.isFans(
-                                context.getVisitorId(), ids), "isFans"));
+                                context.getVisitorId(), ids), "isFans")) //
+                .lazy(on(Fake.class, //
+                        (TestBuildContext context, Collection<Integer> ids) -> testDAO.isFans(
+                                context.getVisitorId(), ids), "unreachedLazy")) //
+                .lazy(on(Fake.class, //
+                        (TestBuildContext context, Collection<Integer> ids) -> {
+                            context.getData("unreachedLazy");
+                            return testDAO.isFans(context.getVisitorId(), ids);
+                        }, "unreachedLazy2")) //
+        ;
         System.out.println("builder===>");
         System.out.println(builder);
     }
@@ -97,7 +108,7 @@ public class ModelBuilderTest {
         posts.forEach(post -> post.setComments(testDAO.getComments(post.getCommentIds()).values()
                 .stream().collect(toList())));
         sources.addAll(posts);
-        sources.addAll(testDAO.getComments(Arrays.asList(3L)).values());
+        sources.addAll(testDAO.getComments(singletonList(3L)).values());
         sources.add(new SubUser(98));
         logger.info("sources===>");
         sources.forEach(o -> logger.info("{}", o));
@@ -140,6 +151,11 @@ public class ModelBuilderTest {
                 assertUser(buildContext, user);
             }
         }
+
+        Map<Long, Boolean> unreachedLazy = buildContext.getData("unreachedLazy2");
+        assertTrue(unreachedLazy.isEmpty());
+        assertFalse(unreachedLazy.getOrDefault(1L, false));
+
         logger.info("checking nodes.");
         buildContext.getData(User.class).values().forEach(user -> assertUser(buildContext, user));
         logger.info("fin.");
@@ -191,7 +207,7 @@ public class ModelBuilderTest {
             fansMap.put(1, 99);
         }
 
-        public Map<Integer, User> getUsers(Collection<Integer> ids) {
+        Map<Integer, User> getUsers(Collection<Integer> ids) {
             if (retreievedUserIds != null) {
                 logger.info("try to get users:{}", ids);
                 for (Integer id : ids) {
@@ -201,7 +217,7 @@ public class ModelBuilderTest {
             return ids.stream().filter(i -> i <= USER_MAX).collect(toMap(identity(), User::new));
         }
 
-        public Map<Long, Post> getPosts(Collection<Long> ids) {
+        Map<Long, Post> getPosts(Collection<Long> ids) {
             if (retreievedPostIds != null) {
                 logger.info("try to get posts:{}", ids);
                 for (Long id : ids) {
@@ -211,7 +227,7 @@ public class ModelBuilderTest {
             return Maps.filterKeys(posts, ids::contains);
         }
 
-        public Map<Long, Comment> getComments(Collection<Long> ids) {
+        Map<Long, Comment> getComments(Collection<Long> ids) {
             if (ids == null) {
                 return Collections.emptyMap();
             }
@@ -224,7 +240,7 @@ public class ModelBuilderTest {
             return Maps.filterKeys(cmts, ids::contains);
         }
 
-        public Map<Integer, Boolean> isFollowing(int fromUserId, Collection<Integer> ids) {
+        Map<Integer, Boolean> isFollowing(int fromUserId, Collection<Integer> ids) {
             if (retrievedFollowUserIds != null) {
                 logger.info("try to get followings:{}->{}", fromUserId, ids);
                 for (Integer id : ids) {
@@ -235,7 +251,7 @@ public class ModelBuilderTest {
             return ids.stream().collect(toMap(identity(), followings::contains));
         }
 
-        public Map<Integer, Boolean> isFans(int fromUserId, Collection<Integer> ids) {
+        Map<Integer, Boolean> isFans(int fromUserId, Collection<Integer> ids) {
             if (retrievedFansUserIds != null) {
                 logger.info("try to get fans:{}->{}", fromUserId, ids);
                 for (Integer id : ids) {
