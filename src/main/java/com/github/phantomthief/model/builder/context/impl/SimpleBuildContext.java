@@ -47,8 +47,8 @@ public class SimpleBuildContext implements BuildContext {
     public void merge(BuildContext buildContext) {
         if (buildContext instanceof SimpleBuildContext) {
             SimpleBuildContext other = (SimpleBuildContext) buildContext;
-            other.datas.forEach((namespace, values) -> datas.merge(namespace, values,
-                    MergeUtils::merge));
+            other.datas.forEach(
+                    (namespace, values) -> datas.merge(namespace, values, MergeUtils::merge));
             other.lazyBuilders.forEach(lazyBuilders::putIfAbsent);
             lazyBuilders.keySet().forEach(datas::remove);
         } else {

@@ -59,17 +59,11 @@ public class ModelBuilderTest {
                 //
                 .self(Comment.class, Comment::getId)
                 //
-                .on(Comment.class)
-                .id(Comment::getAtUserIds)
-                .to(User.class)
+                .on(Comment.class).id(Comment::getAtUserIds).to(User.class)
                 //
-                .on(HasUser.class)
-                .id(HasUser::getUserId)
-                .to(User.class)
+                .on(HasUser.class).id(HasUser::getUserId).to(User.class)
                 //
-                .on(Post.class)
-                .value(Post::comments, Comment::getId)
-                .to(Comment.class)
+                .on(Post.class).value(Post::comments, Comment::getId).to(Comment.class)
                 //
                 .build(User.class, testDAO::getUsers)
                 //
@@ -79,17 +73,19 @@ public class ModelBuilderTest {
                 //
                 .build(User.class)
 
-                .by((TestBuildContext context, Collection<Integer> ids) -> testDAO.isFollowing(
-                        context.getVisitorId(), ids))
+                .by((TestBuildContext context, Collection<Integer> ids) -> testDAO
+                        .isFollowing(context.getVisitorId(), ids))
                 .to("isFollowing")
                 //
 
                 .lazy(on(User.class, //
-                        (TestBuildContext context, Collection<Integer> ids) -> testDAO.isFans(
-                                context.getVisitorId(), ids), "isFans")) //
+                        (TestBuildContext context, Collection<Integer> ids) -> testDAO
+                                .isFans(context.getVisitorId(), ids),
+                        "isFans")) //
                 .lazy(on(Fake.class, //
-                        (TestBuildContext context, Collection<Integer> ids) -> testDAO.isFans(
-                                context.getVisitorId(), ids), "unreachedLazy")) //
+                        (TestBuildContext context, Collection<Integer> ids) -> testDAO
+                                .isFans(context.getVisitorId(), ids),
+                        "unreachedLazy")) //
                 .lazy(on(Fake.class, //
                         (TestBuildContext context, Collection<Integer> ids) -> {
                             context.getData("unreachedLazy");
@@ -105,8 +101,8 @@ public class ModelBuilderTest {
         TestBuildContext buildContext = new TestBuildContext(1);
         List<Object> sources = new ArrayList<>();
         Collection<Post> posts = testDAO.getPosts(Arrays.asList(1L, 2L, 3L)).values();
-        posts.forEach(post -> post.setComments(testDAO.getComments(post.getCommentIds()).values()
-                .stream().collect(toList())));
+        posts.forEach(post -> post.setComments(
+                testDAO.getComments(post.getCommentIds()).values().stream().collect(toList())));
         sources.addAll(posts);
         sources.addAll(testDAO.getComments(singletonList(3L)).values());
         sources.add(new SubUser(98));
@@ -167,7 +163,8 @@ public class ModelBuilderTest {
 
     private void assertCmt(TestBuildContext buildContext, Comment cmt) {
         assertEquals(buildContext.getData(Comment.class).get(cmt.getId()), cmt);
-        assertEquals(cmt.getUserId(), buildContext.getData(User.class).get(cmt.getUserId()).getId());
+        assertEquals(cmt.getUserId(),
+                buildContext.getData(User.class).get(cmt.getUserId()).getId());
         if (cmt.getAtUserIds() != null) {
             for (Integer atUserId : cmt.getAtUserIds()) {
                 assertEquals(atUserId, buildContext.getData(User.class).get(atUserId).getId());
@@ -178,16 +175,17 @@ public class ModelBuilderTest {
     private class TestDAO {
 
         private static final int USER_MAX = 100;
-        private final Map<Long, Post> posts = ImmutableList.of(new Post(1, 1, null), //
-                new Post(2, 1, Arrays.asList(1L, 2L, 3L)), //
-                new Post(3, 2, Arrays.asList(4L, 5L))).stream()
-                .collect(toMap(Post::getId, identity()));
+        private final Map<Long, Post> posts = ImmutableList
+                .of(new Post(1, 1, null), //
+                        new Post(2, 1, Arrays.asList(1L, 2L, 3L)), //
+                        new Post(3, 2, Arrays.asList(4L, 5L)))
+                .stream().collect(toMap(Post::getId, identity()));
 
         private final Map<Long, Comment> cmts = ImmutableList
                 .of(new Comment(1, 1, null), new Comment(2, 2, null), new Comment(3, 1, null), //
                         new Comment(4, 2, Arrays.asList(2, 3)), //
-                        new Comment(5, 11, Arrays.asList(2, 99))).stream()
-                .collect(toMap(Comment::getId, identity()));
+                        new Comment(5, 11, Arrays.asList(2, 99)))
+                .stream().collect(toMap(Comment::getId, identity()));
 
         private final Multimap<Integer, Integer> followingMap = HashMultimap.create();
         private final Multimap<Integer, Integer> fansMap = HashMultimap.create();

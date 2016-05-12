@@ -95,34 +95,31 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     }
 
     private void mergeToBuildContext(Map<Object, Map<Object, Object>> valuesMap, B buildContext) {
-        valuesMap.forEach((valueNamespace, values) -> buildContext.getData(valueNamespace).putAll(
-                values));
+        valuesMap.forEach(
+                (valueNamespace, values) -> buildContext.getData(valueNamespace).putAll(values));
     }
 
     private void valueBuild(Map<Object, Set<Object>> idsMap,
             Map<Object, Map<Object, Object>> valuesMap, B buildContext) {
-        idsMap.forEach((idNamespace, ids) -> valueBuilders
-                .get(idNamespace)
-                .forEach(
-                        valueBuilderWrapper -> {
-                            Object valueNamespace = valueBuilderWrapper.getKey();
-                            BiFunction<B, Collection<Object>, Map<Object, Object>> valueBuilder = valueBuilderWrapper
-                                    .getValue();
-                            Set<Object> needToBuildIds = filterIdSetOnBuild(ids, buildContext,
-                                    valuesMap, valueNamespace);
-                            Map<Object, Object> values = valueBuilder.apply(buildContext,
-                                    needToBuildIds);
-                            if (values != null) {
-                                valuesMap.merge(valueNamespace, values, MergeUtils::merge);
-                            }
-                        }));
+        idsMap.forEach((idNamespace, ids) -> valueBuilders.get(idNamespace)
+                .forEach(valueBuilderWrapper -> {
+                    Object valueNamespace = valueBuilderWrapper.getKey();
+                    BiFunction<B, Collection<Object>, Map<Object, Object>> valueBuilder = valueBuilderWrapper
+                            .getValue();
+                    Set<Object> needToBuildIds = filterIdSetOnBuild(ids, buildContext, valuesMap,
+                            valueNamespace);
+                    Map<Object, Object> values = valueBuilder.apply(buildContext, needToBuildIds);
+                    if (values != null) {
+                        valuesMap.merge(valueNamespace, values, MergeUtils::merge);
+                    }
+                }));
     }
 
     private Set<Object> filterIdSetOnBuild(Set<Object> original, B buildContext,
             Map<Object, Map<Object, Object>> valuesMap, Object valueNamespace) {
         Set<Object> buildContextExistIds = buildContext.getData(valueNamespace).keySet();
-        Set<Object> valueMapExistIds = valuesMap.computeIfAbsent(valueNamespace,
-                i -> new HashMap<>()).keySet();
+        Set<Object> valueMapExistIds = valuesMap
+                .computeIfAbsent(valueNamespace, i -> new HashMap<>()).keySet();
         return original.stream() //
                 .filter(id -> !buildContextExistIds.contains(id)) //
                 .filter(id -> !valueMapExistIds.contains(id)) //
@@ -135,20 +132,21 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
         if (obj == null) {
             return;
         }
-        cachedValueExtractors.computeIfAbsent(
-                obj.getClass(),
-                t -> getAllSuperTypes(t).stream().flatMap(i -> valueExtractors.get(i).stream())
-                        .collect(toSet())).forEach(valueExtractor -> {
-            KeyPair<Map<Object, Object>> values = valueExtractor.apply(obj);
-            Map<Object, Object> filtered = filterValueMap(values, buildContext);
-            idsMap.merge(values.getKey(), new HashSet<>(filtered.keySet()), MergeUtils::merge);
-            valuesMap.merge(values.getKey(), filtered, MergeUtils::merge);
-        });
-        cachedIdExtractors.computeIfAbsent(
-                obj.getClass(),
-                t -> getAllSuperTypes(t).stream().flatMap(i -> idExtractors.get(i).stream())
-                        .collect(toSet())).forEach(
-                idExtractor -> {
+        cachedValueExtractors
+                .computeIfAbsent(obj.getClass(),
+                        t -> getAllSuperTypes(t).stream()
+                                .flatMap(i -> valueExtractors.get(i).stream()).collect(toSet()))
+                .forEach(valueExtractor -> {
+                    KeyPair<Map<Object, Object>> values = valueExtractor.apply(obj);
+                    Map<Object, Object> filtered = filterValueMap(values, buildContext);
+                    idsMap.merge(values.getKey(), new HashSet<>(filtered.keySet()),
+                            MergeUtils::merge);
+                    valuesMap.merge(values.getKey(), filtered, MergeUtils::merge);
+                });
+        cachedIdExtractors
+                .computeIfAbsent(obj.getClass(), t -> getAllSuperTypes(t).stream()
+                        .flatMap(i -> idExtractors.get(i).stream()).collect(toSet()))
+                .forEach(idExtractor -> {
                     KeyPair<Set<Object>> ids = idExtractor.apply(obj);
                     idsMap.merge(ids.getKey(), filterIdSet(ids, buildContext, valuesMap),
                             MergeUtils::merge);
@@ -158,16 +156,16 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     private Set<Object> filterIdSet(KeyPair<Set<Object>> keyPair, B buildContext,
             Map<Object, Map<Object, Object>> valuesMap) {
         Set<Object> buildContextExistIds = buildContext.getData(keyPair.getKey()).keySet();
-        Set<Object> valueMapExistIds = valuesMap.computeIfAbsent(keyPair.getKey(),
-                i -> new HashMap<>()).keySet();
+        Set<Object> valueMapExistIds = valuesMap
+                .computeIfAbsent(keyPair.getKey(), i -> new HashMap<>()).keySet();
         return keyPair.getValue().stream() //
                 .filter(i -> !buildContextExistIds.contains(i)) //
                 .filter(i -> !valueMapExistIds.contains(i)) //
                 .collect(toSet());
     }
 
-    private Map<Object, Object>
-            filterValueMap(KeyPair<Map<Object, Object>> keyPair, B buildContext) {
+    private Map<Object, Object> filterValueMap(KeyPair<Map<Object, Object>> keyPair,
+            B buildContext) {
         Map<Object, Object> buildContextData = buildContext.getData(keyPair.getKey());
         return keyPair.getValue().entrySet().stream()
                 .filter(e -> !buildContextData.containsKey(e.getKey()))
@@ -199,9 +197,8 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
 
     @SuppressWarnings("rawtypes")
     public SimpleModelBuilder<B> lazy(Lazy lazy) {
-        lazyBuilders.put(lazy.targetNamespace(),
-                buildContext -> (Map) ((BiFunction) lazy.builder()).apply(buildContext,
-                        buildContext.getData(lazy.sourceNamespace()).keySet()));
+        lazyBuilders.put(lazy.targetNamespace(), buildContext -> (Map) ((BiFunction) lazy.builder())
+                .apply(buildContext, buildContext.getData(lazy.sourceNamespace()).keySet()));
         return this;
     }
 
@@ -214,9 +211,9 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     }
 
     private <T> Stream<T> stream(Iterable<T> iterable) {
-        return StreamSupport
-                .stream(spliteratorUnknownSize(iterable.iterator(), (NONNULL | IMMUTABLE | ORDERED)),
-                        false);
+        return StreamSupport.stream(
+                spliteratorUnknownSize(iterable.iterator(), (NONNULL | IMMUTABLE | ORDERED)),
+                false);
     }
 
     // builder.onLazy(UserCache.class).fromId(ids->dao.build(ids)).to("test");
@@ -294,34 +291,30 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             }
 
             public SimpleModelBuilder<B> to(Object valueNamespace) {
-                valueExtractors
-                        .put(objType,
-                                obj -> {
-                                    Object rawValue = valueExtractor.apply((E) obj);
-                                    Map<Object, Object> value;
-                                    if (rawValue == null) {
-                                        value = emptyMap();
-                                    } else {
-                                        if (idExtractor != null) {
-                                            if (rawValue instanceof Iterable) {
-                                                value = stream((Iterable<E>) rawValue).collect(
-                                                        toMap(idExtractor::apply, identity()));
-                                            } else {
-                                                value = singletonMap(idExtractor.apply(rawValue),
-                                                        rawValue);
-                                            }
-                                        } else {
-                                            if (rawValue instanceof Map) {
-                                                value = (Map<Object, Object>) rawValue;
-                                            } else {
-                                                logger.warn("invalid value extractor for:{}->{}",
-                                                        obj, rawValue);
-                                                value = emptyMap();
-                                            }
-                                        }
-                                    }
-                                    return new KeyPair<>(valueNamespace, value);
-                                });
+                valueExtractors.put(objType, obj -> {
+                    Object rawValue = valueExtractor.apply((E) obj);
+                    Map<Object, Object> value;
+                    if (rawValue == null) {
+                        value = emptyMap();
+                    } else {
+                        if (idExtractor != null) {
+                            if (rawValue instanceof Iterable) {
+                                value = stream((Iterable<E>) rawValue)
+                                        .collect(toMap(idExtractor::apply, identity()));
+                            } else {
+                                value = singletonMap(idExtractor.apply(rawValue), rawValue);
+                            }
+                        } else {
+                            if (rawValue instanceof Map) {
+                                value = (Map<Object, Object>) rawValue;
+                            } else {
+                                logger.warn("invalid value extractor for:{}->{}", obj, rawValue);
+                                value = emptyMap();
+                            }
+                        }
+                    }
+                    return new KeyPair<>(valueNamespace, value);
+                });
                 cachedValueExtractors.clear();
                 return SimpleModelBuilder.this;
             }
@@ -378,7 +371,8 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
 
             private final BiFunction<B, Collection<K>, Map<K, Object>> valueBuilderFunction;
 
-            private BuildingValue(BiFunction<B, Collection<K>, Map<K, Object>> valueBuilderFunction) {
+            private BuildingValue(
+                    BiFunction<B, Collection<K>, Map<K, Object>> valueBuilderFunction) {
                 this.valueBuilderFunction = valueBuilderFunction;
             }
 
