@@ -30,17 +30,11 @@ public class Post implements HasUser, HasId<Long> {
         this.commentIds = commentIds;
     }
 
-    /* (non-Javadoc)
-     * @see com.github.phantomthief.model.builder.model.HasId#getId()
-     */
     @Override
     public Long getId() {
         return id;
     }
 
-    /* (non-Javadoc)
-     * @see com.github.phantomthief.model.builder.model.HasUser#getUserId()
-     */
     @Override
     public Integer getUserId() {
         return userId;

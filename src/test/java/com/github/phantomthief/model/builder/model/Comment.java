@@ -27,17 +27,11 @@ public class Comment implements HasId<Long>, HasUser {
         this.atUserIds = atUserIds;
     }
 
-    /* (non-Javadoc)
-     * @see com.github.phantomthief.model.builder.model.HasUser#getUserId()
-     */
     @Override
     public Integer getUserId() {
         return userId;
     }
 
-    /* (non-Javadoc)
-     * @see com.github.phantomthief.model.builder.model.HasId#getId()
-     */
     @Override
     public Long getId() {
         return id;
