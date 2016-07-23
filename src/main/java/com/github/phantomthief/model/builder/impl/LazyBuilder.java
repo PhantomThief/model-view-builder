@@ -6,9 +6,9 @@ package com.github.phantomthief.model.builder.impl;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import com.github.phantomthief.model.builder.impl.SimpleModelBuilder.Lazy;
-import com.google.common.base.Function;
 
 /**
  * @author w.vela
