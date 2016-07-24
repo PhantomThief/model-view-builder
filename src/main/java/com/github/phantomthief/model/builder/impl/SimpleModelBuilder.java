@@ -34,6 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.slf4j.Logger;
+
 import com.github.phantomthief.model.builder.ModelBuilder;
 import com.github.phantomthief.model.builder.context.BuildContext;
 import com.github.phantomthief.model.builder.context.impl.SimpleBuildContext;
@@ -46,7 +48,7 @@ import com.google.common.collect.SetMultimap;
 @SuppressWarnings("unchecked")
 public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<B> {
 
-    private static org.slf4j.Logger logger = getLogger(SimpleModelBuilder.class);
+    private static final Logger logger = getLogger(SimpleModelBuilder.class);
 
     // obj.class=>obj->(namespace,ids)
     private final SetMultimap<Class<?>, Function<Object, KeyPair<Set<Object>>>> idExtractors = create();
@@ -172,33 +174,111 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
                 .collect(toMap(Entry::getKey, Entry::getValue));
     }
 
+    /**
+     * use {@link #extractId} or {@link #extractValue}
+     */
+    @Deprecated
     public <E> OnBuilder<E> on(Class<E> type) {
         return new OnBuilder<>(type);
     }
 
+    /**
+     * use {@link #valueFromSelf}
+     */
+    @Deprecated
     public <E> SimpleModelBuilder<B> self(Class<E> type, Function<E, Object> idExtractor) {
         SimpleModelBuilder<B>.OnBuilder<E> onBuilder = new OnBuilder<>(type);
         return onBuilder.new ExtractingValue(i -> i).id(idExtractor).to(type);
     }
 
+    /**
+     * use {@link #buildValue} or {@link #buildValueTo}
+     */
+    @Deprecated
     public BuildingBuilder build(Object idNamespace) {
         return new BuildingBuilder(idNamespace);
     }
 
+    /**
+     * use {@link #buildValue} or {@link #buildValueTo}
+     */
+    @Deprecated
     public <K> SimpleModelBuilder<B> build(Object idNamespace,
             BiFunction<B, Collection<K>, Map<K, ?>> valueBuilder) {
         return build(idNamespace).by(valueBuilder).to(idNamespace);
     }
 
+    /**
+     * use {@link #buildValue} or {@link #buildValueTo}
+     */
+    @Deprecated
     public <K> SimpleModelBuilder<B> build(Object idNamespace,
             Function<Collection<K>, Map<K, ?>> valueBuilder) {
         return build(idNamespace).by(valueBuilder).to(idNamespace);
     }
 
+    /**
+     * use {@link #lazyBuild}
+     */
     @SuppressWarnings("rawtypes")
+    @Deprecated
     public SimpleModelBuilder<B> lazy(Lazy lazy) {
         lazyBuilders.put(lazy.targetNamespace(), buildContext -> (Map) ((BiFunction) lazy.builder())
                 .apply(buildContext, buildContext.getData(lazy.sourceNamespace()).keySet()));
+        return this;
+    }
+
+    public <E> SimpleModelBuilder<B> valueFromSelf(Class<E> type, Function<E, Object> idExtractor) {
+        self(type, idExtractor);
+        return this;
+    }
+
+    public <E> SimpleModelBuilder<B> extractId(Class<E> type, Function<E, Object> idExtractor,
+            Object toIdNamespace) {
+        on(type).id(idExtractor).to(toIdNamespace);
+        return this;
+    }
+
+    public <E, V> SimpleModelBuilder<B> extractValue(Class<E> type,
+            Function<E, Object> valueExtractor, Function<V, Object> idExtractor,
+            Object toValueNamespace) {
+        on(type).value(valueExtractor).id(idExtractor).to(toValueNamespace);
+        return this;
+    }
+
+    public <K> SimpleModelBuilder<B> buildValue(Object idNamespace,
+            Function<Collection<K>, Map<K, ?>> valueBuilder) {
+        build(idNamespace, valueBuilder);
+        return this;
+    }
+
+    public <K> SimpleModelBuilder<B> buildValue(Object idNamespace,
+            BiFunction<B, Collection<K>, Map<K, ?>> valueBuilder) {
+        build(idNamespace, valueBuilder);
+        return this;
+    }
+
+    public <K> SimpleModelBuilder<B> buildValueTo(Object idNamespace,
+            Function<Collection<K>, Map<K, ?>> valueBuilder, Object toValueNamespace) {
+        build(idNamespace).by(valueBuilder).to(toValueNamespace);
+        return this;
+    }
+
+    public <K> SimpleModelBuilder<B> buildValueTo(Object idNamespace,
+            BiFunction<B, Collection<K>, Map<K, ?>> valueBuilder, Object toValueNamespace) {
+        build(idNamespace).by(valueBuilder).to(toValueNamespace);
+        return this;
+    }
+
+    public <K> SimpleModelBuilder<B> lazyBuild(Object sourceNamespace,
+            Function<Collection<K>, Map<K, ?>> builder, Object targetNamespace) {
+        lazy(LazyBuilder.on(sourceNamespace, builder, targetNamespace));
+        return this;
+    }
+
+    public <K> SimpleModelBuilder<B> lazyBuild(Object sourceNamespace,
+            BiFunction<B, Collection<K>, Map<K, ?>> builder, Object targetNamespace) {
+        lazy(LazyBuilder.on(sourceNamespace, builder, targetNamespace));
         return this;
     }
 
@@ -255,6 +335,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
         }
     }
 
+    @Deprecated
     public final class OnBuilder<E> {
 
         private final Class<E> objType;
@@ -349,6 +430,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
         }
     }
 
+    @Deprecated
     public final class BuildingBuilder {
 
         private final Object idNamespace;
