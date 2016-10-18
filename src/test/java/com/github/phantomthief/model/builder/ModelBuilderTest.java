@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
 
 import com.github.phantomthief.model.builder.context.impl.SimpleBuildContext;
 import com.github.phantomthief.model.builder.impl.SimpleModelBuilder;
@@ -44,53 +45,41 @@ import com.google.common.collect.Multimap;
  */
 public class ModelBuilderTest {
 
-    private static org.slf4j.Logger logger = getLogger(ModelBuilderTest.class);
+    private static Logger logger = getLogger(ModelBuilderTest.class);
     private TestDAO testDAO;
     private ModelBuilder<TestBuildContext> builder;
 
     @Before
     public void setup() {
         testDAO = new TestDAO();
-        builder = new SimpleModelBuilder<TestBuildContext>()
-                //
-                .self(User.class, User::getId)
-                //
-                .self(Post.class, Post::getId)
-                //
-                .self(Comment.class, Comment::getId)
-                //
-                .on(Comment.class).id(Comment::getAtUserIds).to(User.class)
-                //
-                .on(HasUser.class).id(HasUser::getUserId).to(User.class)
-                //
-                .on(Post.class).value(Post::comments, Comment::getId).to(Comment.class)
-                //
-                .build(User.class, testDAO::getUsers)
-                //
-                .build(Post.class, testDAO::getPosts)
-                //
-                .build(Comment.class, testDAO::getComments)
-                //
-                .build(User.class)
-
+        builder = new SimpleModelBuilder<TestBuildContext>() //
+                .self(User.class, User::getId) //
+                .self(Post.class, Post::getId) //
+                .self(Comment.class, Comment::getId) //
+                .on(Comment.class).id(Comment::getAtUserIds).to(User.class) //
+                .on(HasUser.class).id(HasUser::getUserId).to(User.class) //
+                .on(Post.class).value(Post::comments, Comment::getId).to(Comment.class) //
+                .build(User.class, testDAO::getUsers).build(Post.class, testDAO::getPosts) //
+                .build(Comment.class, testDAO::getComments).build(User.class) //
                 .by((TestBuildContext context, Collection<Integer> ids) -> testDAO
                         .isFollowing(context.getVisitorId(), ids))
-                .to("isFollowing")
-                //
-
-                .lazy(on(User.class, //
+                .to("isFollowing") //
+                .lazy(on(User.class,
                         (TestBuildContext context, Collection<Integer> ids) -> testDAO
                                 .isFans(context.getVisitorId(), ids),
                         "isFans")) //
-                .lazy(on(Fake.class, //
+                .lazyBuild(User.class,
+                        (TestBuildContext context, Collection<Integer> ids) -> testDAO
+                                .isFans(context.getVisitorId(), ids),
+                        "isFans3") //
+                .lazy(on(Fake.class,
                         (TestBuildContext context, Collection<Integer> ids) -> testDAO
                                 .isFans(context.getVisitorId(), ids),
                         "unreachedLazy")) //
-                .lazy(on(Fake.class, //
-                        (TestBuildContext context, Collection<Integer> ids) -> {
-                            context.getData("unreachedLazy");
-                            return testDAO.isFans(context.getVisitorId(), ids);
-                        }, "unreachedLazy2")) //
+                .lazy(on(Fake.class, (TestBuildContext context, Collection<Integer> ids) -> {
+                    context.getData("unreachedLazy");
+                    return testDAO.isFans(context.getVisitorId(), ids);
+                }, "unreachedLazy2")) //
         ;
         System.out.println("builder===>");
         System.out.println(builder);
@@ -155,6 +144,17 @@ public class ModelBuilderTest {
         logger.info("checking nodes.");
         buildContext.getData(User.class).values().forEach(user -> assertUser(buildContext, user));
         logger.info("fin.");
+    }
+
+    @Test
+    public void testNullBuild() throws Exception {
+        TestBuildContext buildContext = new TestBuildContext(1);
+        builder.buildSingle(null, buildContext);
+        buildContext.getData("t").put("a", "c");
+        System.out.println("checking...");
+        Map<Integer, Boolean> isFans = buildContext.getData("isFans3");
+        assertFalse(isFans.getOrDefault(1, false));
+        System.out.println("fin.");
     }
 
     private void assertUser(TestBuildContext buildContext, User user) {
