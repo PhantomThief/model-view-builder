@@ -22,20 +22,27 @@ import com.github.phantomthief.model.builder.util.MergeUtils;
 @SuppressWarnings("unchecked")
 public class SimpleBuildContext implements BuildContext {
 
-    private final ConcurrentMap<Object, Map<Object, Object>> datas = new ConcurrentHashMap<>();
-
+    private final ConcurrentMap<Object, Map<Object, Object>> datas;
+    private final ConcurrentMap<Object, Map<Object, Object>> lazyDatas = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, Supplier<Map<Object, Object>>> lazyBuilders = new ConcurrentHashMap<>();
+
+    public SimpleBuildContext() {
+        this(new ConcurrentHashMap<>());
+    }
+
+    // for test case
+    public SimpleBuildContext(ConcurrentMap<Object, Map<Object, Object>> datas) {
+        this.datas = datas;
+    }
 
     @Override
     public <K, V> Map<K, V> getData(Object namespace) {
-        return (Map<K, V>) datas.computeIfAbsent(namespace, ns -> {
-            Supplier<Map<Object, Object>> supplier = lazyBuilders.get(namespace);
-            if (supplier != null) {
-                return supplier.get();
-            } else {
-                return new ConcurrentHashMap<>();
-            }
-        });
+        Supplier<Map<Object, Object>> lazyBuilder = lazyBuilders.get(namespace);
+        if (lazyBuilder != null) {
+            return (Map<K, V>) lazyDatas.computeIfAbsent(namespace, ns -> lazyBuilder.get());
+        } else {
+            return (Map<K, V>) datas.computeIfAbsent(namespace, ns -> new ConcurrentHashMap<>());
+        }
     }
 
     public void setupLazyNodeData(Object namespace,
@@ -50,7 +57,10 @@ public class SimpleBuildContext implements BuildContext {
             other.datas.forEach(
                     (namespace, values) -> datas.merge(namespace, values, MergeUtils::merge));
             other.lazyBuilders.forEach(lazyBuilders::putIfAbsent);
-            lazyBuilders.keySet().forEach(datas::remove);
+            lazyBuilders.keySet().forEach(key -> {
+                datas.remove(key);
+                lazyDatas.remove(key);
+            });
         } else {
             throw new UnsupportedOperationException();
         }
