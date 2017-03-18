@@ -6,7 +6,6 @@ package com.github.phantomthief.model.builder.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.google.common.base.Throwables;
 
 /**
  * @author w.vela
@@ -23,7 +22,7 @@ public class ToStringUtils {
         try {
             return obj.getClass().getSimpleName() + "=>" + objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            throw Throwables.propagate(e);
+            throw new RuntimeException(e);
         }
     }
 }
