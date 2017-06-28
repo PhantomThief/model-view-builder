@@ -4,6 +4,7 @@
 package com.github.phantomthief.model.builder;
 
 import static com.github.phantomthief.model.builder.impl.LazyBuilder.on;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
@@ -17,7 +18,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -187,6 +187,28 @@ public class ModelBuilderTest {
         System.out.println("fin.");
     }
 
+    @Test
+    public void testDuplicateMerge() throws Exception {
+        TestBuildContext mainBuildContext = new TestBuildContext(1);
+
+        TestBuildContext buildContext = new TestBuildContext(1);
+        builder.buildMulti(emptyMap().values(), buildContext);
+        mainBuildContext.merge(buildContext);
+
+        TestBuildContext buildContext2 = new TestBuildContext(1);
+        Map<Integer, User> byIdsFailFast = testDAO.getUsers(ImmutableList.of(1, 2));
+        builder.buildMulti(byIdsFailFast.values(), buildContext2);
+        Map<Integer, Boolean> isFans3 = buildContext2.getData("isFans3");
+        System.out.println("[test] " + isFans3);
+        assertTrue(!isFans3.isEmpty());
+
+        mainBuildContext.merge(buildContext2);
+
+        isFans3 = mainBuildContext.getData("isFans3");
+        System.out.println("[test] " + isFans3);
+        assertTrue(!isFans3.isEmpty());
+    }
+
     private void assertUser(TestBuildContext buildContext, User user) {
         assertNotNull(buildContext.getData("isFollowing").get(user.getId()));
     }
@@ -257,7 +279,7 @@ public class ModelBuilderTest {
 
         Map<Long, Comment> getComments(Collection<Long> ids) {
             if (ids == null) {
-                return Collections.emptyMap();
+                return emptyMap();
             }
             if (retreievedCommentIds != null) {
                 logger.info("try to get cmts:{}", ids);
