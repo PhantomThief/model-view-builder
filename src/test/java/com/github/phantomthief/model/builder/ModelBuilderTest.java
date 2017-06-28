@@ -4,6 +4,7 @@
 package com.github.phantomthief.model.builder;
 
 import static com.github.phantomthief.model.builder.impl.LazyBuilder.on;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
@@ -17,7 +18,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -68,10 +68,12 @@ public class ModelBuilderTest {
                         (TestBuildContext context, Collection<Integer> ids) -> testDAO
                                 .isFans(context.getVisitorId(), ids),
                         "isFans")) //
-                .lazyBuild(User.class,
-                        (TestBuildContext context, Collection<Integer> ids) -> testDAO
-                                .isFans(context.getVisitorId(), ids),
-                        "isFans3") //
+                .lazyBuild(User.class, (TestBuildContext context, Collection<Integer> ids) -> {
+                    Map<Integer, Boolean> fans = testDAO.isFans(context.getVisitorId(), ids);
+                    logger.debug("build fans for:{}->{}, result:{}", context.getVisitorId(), ids,
+                            fans);
+                    return fans;
+                }, "isFans3") //
                 .lazy(on(Fake.class,
                         (TestBuildContext context, Collection<Integer> ids) -> testDAO
                                 .isFans(context.getVisitorId(), ids),
@@ -157,6 +159,56 @@ public class ModelBuilderTest {
         System.out.println("fin.");
     }
 
+    @Test
+    public void testMerge() throws Exception {
+        TestBuildContext buildContext = new TestBuildContext(1);
+        List<User> users = new ArrayList<>(testDAO.getUsers(ImmutableList.of(1, 2, 3)).values());
+        builder.buildMulti(users, buildContext);
+        Map<Integer, Boolean> isFans = buildContext.getData("isFans3");
+        System.out.println("isFans:" + isFans);
+        users.forEach(user -> assertTrue(isFans.get(user.getId()) != null));
+
+        TestBuildContext other = new TestBuildContext(1);
+        List<User> users2 = new ArrayList<>(testDAO.getUsers(ImmutableList.of(3, 4, 5)).values());
+        builder.buildMulti(users2, other);
+        Map<Integer, Boolean> isFans2 = other.getData("isFans3");
+        System.out.println("isFans2:" + isFans2);
+        users2.forEach(user -> assertTrue(isFans2.get(user.getId()) != null));
+
+        buildContext.merge(other);
+        System.out.println("after merged.");
+        System.out.println("users:" + buildContext.getData(User.class));
+
+        Map<Integer, Boolean> merged = buildContext.getData("isFans3");
+        System.out.println("merged:" + merged);
+        for (int i = 1; i <= 5; i++) {
+            assertTrue(merged.get(i) != null);
+        }
+        System.out.println("fin.");
+    }
+
+    @Test
+    public void testDuplicateMerge() throws Exception {
+        TestBuildContext mainBuildContext = new TestBuildContext(1);
+
+        TestBuildContext buildContext = new TestBuildContext(1);
+        builder.buildMulti(emptyMap().values(), buildContext);
+        mainBuildContext.merge(buildContext);
+
+        TestBuildContext buildContext2 = new TestBuildContext(1);
+        Map<Integer, User> byIdsFailFast = testDAO.getUsers(ImmutableList.of(1, 2));
+        builder.buildMulti(byIdsFailFast.values(), buildContext2);
+        Map<Integer, Boolean> isFans3 = buildContext2.getData("isFans3");
+        System.out.println("[test] " + isFans3);
+        assertTrue(!isFans3.isEmpty());
+
+        mainBuildContext.merge(buildContext2);
+
+        isFans3 = mainBuildContext.getData("isFans3");
+        System.out.println("[test] " + isFans3);
+        assertTrue(!isFans3.isEmpty());
+    }
+
     private void assertUser(TestBuildContext buildContext, User user) {
         assertNotNull(buildContext.getData("isFollowing").get(user.getId()));
     }
@@ -227,7 +279,7 @@ public class ModelBuilderTest {
 
         Map<Long, Comment> getComments(Collection<Long> ids) {
             if (ids == null) {
-                return Collections.emptyMap();
+                return emptyMap();
             }
             if (retreievedCommentIds != null) {
                 logger.info("try to get cmts:{}", ids);
