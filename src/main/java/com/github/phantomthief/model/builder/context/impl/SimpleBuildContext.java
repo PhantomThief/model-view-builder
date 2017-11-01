@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder.context.impl;
 
 import static org.apache.commons.lang3.builder.ToStringBuilder.reflectionToString;

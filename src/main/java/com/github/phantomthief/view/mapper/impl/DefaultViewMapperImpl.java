@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.view.mapper.impl;
 
 import static org.apache.commons.lang3.ClassUtils.getAllInterfaces;

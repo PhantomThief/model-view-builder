@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder;
 
 import static java.util.Collections.singleton;

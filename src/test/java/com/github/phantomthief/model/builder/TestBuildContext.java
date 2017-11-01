@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder;
 
 import java.util.concurrent.ConcurrentHashMap;

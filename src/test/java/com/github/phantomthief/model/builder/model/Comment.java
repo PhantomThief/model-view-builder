@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder.model;
 
 import java.util.List;
@@ -16,11 +13,6 @@ public class Comment implements HasId<Long>, HasUser {
     private final int userId;
     private final List<Integer> atUserIds;
 
-    /**
-     * @param id
-     * @param userId
-     * @param atUserIds
-     */
     public Comment(long id, int userId, List<Integer> atUserIds) {
         this.id = id;
         this.userId = userId;
@@ -66,9 +58,6 @@ public class Comment implements HasId<Long>, HasUser {
             return false;
         }
         Comment other = (Comment) obj;
-        if (id != other.id) {
-            return false;
-        }
-        return true;
+        return id == other.id;
     }
 }

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder.model;
 
 import java.util.List;
@@ -19,11 +16,6 @@ public class Post implements HasUser, HasId<Long> {
     @JsonIgnore
     private List<Comment> comments;
 
-    /**
-     * @param id
-     * @param userId
-     * @param comments
-     */
     public Post(long id, int userId, List<Long> commentIds) {
         this.id = id;
         this.userId = userId;
@@ -77,9 +69,6 @@ public class Post implements HasUser, HasId<Long> {
             return false;
         }
         Post other = (Post) obj;
-        if (id != other.id) {
-            return false;
-        }
-        return true;
+        return id == other.id;
     }
 }

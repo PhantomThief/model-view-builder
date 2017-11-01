@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.view.mapper;
 
 import static java.util.stream.Collectors.toList;

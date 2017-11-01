@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder.model;
 
 import com.github.phantomthief.model.builder.util.ToStringUtils;
@@ -12,9 +9,6 @@ public class User implements HasId<Integer> {
 
     private final int id;
 
-    /**
-     * @param id
-     */
     public User(int id) {
         this.id = id;
     }
@@ -49,9 +43,6 @@ public class User implements HasId<Integer> {
             return false;
         }
         User other = (User) obj;
-        if (id != other.id) {
-            return false;
-        }
-        return true;
+        return id == other.id;
     }
 }

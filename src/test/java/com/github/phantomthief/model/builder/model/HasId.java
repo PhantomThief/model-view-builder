@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder.model;
 
 /**
@@ -8,5 +5,5 @@ package com.github.phantomthief.model.builder.model;
  */
 public interface HasId<T> {
 
-    public T getId();
+    T getId();
 }

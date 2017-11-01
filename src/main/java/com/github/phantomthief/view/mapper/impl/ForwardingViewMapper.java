@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.view.mapper.impl;
 
 import com.github.phantomthief.view.mapper.ViewMapper;

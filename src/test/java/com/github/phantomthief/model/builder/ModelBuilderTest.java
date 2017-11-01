@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder;
 
 import static com.github.phantomthief.model.builder.impl.LazyBuilder.on;
@@ -9,10 +6,10 @@ import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.ArrayList;
@@ -23,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import com.github.phantomthief.model.builder.context.impl.SimpleBuildContext;
@@ -43,14 +40,14 @@ import com.google.common.collect.Multimap;
 /**
  * @author w.vela
  */
-public class ModelBuilderTest {
+class ModelBuilderTest {
 
     private static Logger logger = getLogger(ModelBuilderTest.class);
     private TestDAO testDAO;
     private ModelBuilder<TestBuildContext> builder;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         testDAO = new TestDAO();
         builder = new SimpleModelBuilder<TestBuildContext>() //
                 .self(User.class, User::getId) //
@@ -88,7 +85,7 @@ public class ModelBuilderTest {
     }
 
     @Test
-    public void testBuild() throws Exception {
+    void testBuild() {
         TestBuildContext buildContext = new TestBuildContext(1);
         List<Object> sources = new ArrayList<>();
         Collection<Post> posts = testDAO.getPosts(Arrays.asList(1L, 2L, 3L)).values();
@@ -149,7 +146,7 @@ public class ModelBuilderTest {
     }
 
     @Test
-    public void testNullBuild() throws Exception {
+    void testNullBuild() {
         TestBuildContext buildContext = new TestBuildContext(1);
         builder.buildSingle(null, buildContext);
         buildContext.getData("t").put("a", "c");
@@ -160,7 +157,7 @@ public class ModelBuilderTest {
     }
 
     @Test
-    public void testMerge() throws Exception {
+    void testMerge() {
         TestBuildContext buildContext = new TestBuildContext(1);
         List<User> users = new ArrayList<>(testDAO.getUsers(ImmutableList.of(1, 2, 3)).values());
         builder.buildMulti(users, buildContext);
@@ -188,7 +185,7 @@ public class ModelBuilderTest {
     }
 
     @Test
-    public void testDuplicateMerge() throws Exception {
+    void testDuplicateMerge() {
         TestBuildContext mainBuildContext = new TestBuildContext(1);
 
         TestBuildContext buildContext = new TestBuildContext(1);

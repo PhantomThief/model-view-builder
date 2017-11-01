@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder.model;
 
 /**
@@ -8,9 +5,6 @@ package com.github.phantomthief.model.builder.model;
  */
 public class SubUser extends User {
 
-    /**
-     * @param id
-     */
     public SubUser(int id) {
         super(id);
     }

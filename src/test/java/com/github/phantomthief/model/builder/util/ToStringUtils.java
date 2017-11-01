@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.github.phantomthief.model.builder.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -18,7 +15,7 @@ public class ToStringUtils {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
-    public static final String toString(Object obj) {
+    public static String toString(Object obj) {
         try {
             return obj.getClass().getSimpleName() + "=>" + objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
