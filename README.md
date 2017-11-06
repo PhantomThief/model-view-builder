@@ -63,7 +63,7 @@ public Map<Integer, Boolean> isUserFollowingUsers(int userId, Collection<Integer
 <dependency>
     <groupId>com.github.phantomthief</groupId>
 	<artifactId>model-view-builder</artifactId>
-    <version>1.1.2-SNAPSHOT</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
@@ -81,7 +81,7 @@ value命名空间存储的是构建过程中的具体实体数据（比如上面
 
 构建器ModelBuilder声明时使用下面的方式：
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+SimpleModelBuilder<SimpleBuildContext> modelBuilder = new SimpleModelBuilder<SimpleBuildContext>()
 	 // 这里使用流式定义modelBuilder的依赖以及构建器之类的……
 ```
 
@@ -89,7 +89,7 @@ ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 
 每次构建对象时，用这样的调用：
 ```Java
-BuildContext buildContext = new BuildContext();  // 声明一个构建上下文，所有构建的结果都会存入这个上下文对象中
+SimpleBuildContext buildContext = new SimpleBuildContext();  // 声明一个构建上下文，所有构建的结果都会存入这个上下文对象中
 modelBuilder.buildMulti(postList, buildContext); // 执行构建操作
 ```
 
@@ -112,14 +112,14 @@ int postComment = postCommentMap.getOrDefault(specifyPostId, 0);
 上面例子中的使用场景：把Post.getAuthorUserId()返回的数据放到id命名空间User.class
 
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+SimpleModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 	.on(Post.class).id(Post::getAuthorUserId).to(User.class) //post.getAuthoUserId()返回值放到User.class的id命名空间中
 ```
 
 ##### 从已有的value抽取value和id
 
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+SimpleModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 	.self(Post.class, Post::getId) // post对象放到value为Post.class的命名空间，同时Post.getId()
 ```
 
@@ -128,7 +128,7 @@ ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 ##### 从id命名空间构建数据到value命名空间
 
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+SimpleModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 	.build(User.class, userService::getUserByIds) // 把id命名空间User.class用userService.getUserByIds()方法构建数据，并回存到value命名空间User.class
 	.build(Post.class).<Integer> by(postService::getPostCommentCount).to("postComments") // 把id命名空间Post.class的数据用postService.getPostCommentCount()方法构建，构建结果存入postComments的value命名空间
 ```
@@ -189,7 +189,7 @@ List<PostView> postViews = viewMapper.map(postList, bulidContext);
 
 很多使用，希望把一些初始参数放入BuildContext中，这时候可以考虑使用自定义的BuildContext。以需要知道访问者身份的构建器为例：
 ```Java
-public class MyBuildContext extends BuildContext {
+public class MyBuildContext extends SimpleBuildContext {
 	private int visitor;
 	public int getVisitor() {
 		return this.visitor;
@@ -233,7 +233,7 @@ public class Post {
 
 那么依赖声明时可以这样：
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+SimpleModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
 	.on(Post.class).value(Post::getAuthor).id(User::getId).to(User.class);
 ```
 
@@ -315,15 +315,14 @@ List<View> views = overrideViewMapper.map(userList);
 假如有一组对象，都实现了如下接口：
 ```Java
 public interface HasAuthor {
-	public int getAuthorUserId();
+	int getAuthorUserId();
 }
 ```
 
 那么在ModelBuilder声明依赖关系时，可以直接声明这个接口依赖：
 ```Java
-ModelBuilder<BuildContext> modelBuilder = new DefaultModelBuilderImpl<BuildContext>()
-	.on(HasAuthor.class).id(HasAuthor::getAuthorUserId).to(User.class)
- 	.build();
+SimpleModelBuilder<BuildContext> modelBuilder = new SimpleModelBuilder<BuildContext>()
+	.on(HasAuthor.class).id(HasAuthor::getAuthorUserId).to(User.class);
 ```
 
 那么所有实现了HasAuthor接口的Model就不用重复声明这个依赖了。抽象类或者父类上的声明关系也遵循这个规则。
