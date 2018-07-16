@@ -40,6 +40,10 @@ public class OverrideViewMapper extends ForwardingViewMapper {
 
     @SuppressWarnings("rawtypes")
     private BiFunction getMapper(Class<?> modelType) {
+        BiFunction<?, ?, ?> biFunction = modelTypeCache.get(modelType);
+        if (biFunction != null) {
+            return biFunction;
+        }
         return modelTypeCache.computeIfAbsent(modelType, t -> {
             BiFunction<?, ?, ?> result = overrideMappers.get(t);
             if (result == null) {
