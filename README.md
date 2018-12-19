@@ -174,7 +174,7 @@ public class PostView {
 
 ```Java
 ViewMapper viewMapper = new DefaultViewMapperImpl();
-viewMapper.addMapper(Post.class, (buildContext, post) -> new PostView(post, buildContext));
+((DefaultViewMapperImpl) viewMapper).addMapper(Post.class, (buildContext, post) -> new PostView(post, buildContext));
 ```
 
 最终调用：
