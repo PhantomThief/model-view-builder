@@ -14,8 +14,7 @@
         <commons-lang3.version>3.4</commons-lang3.version>
         <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
 
-        <junit-jupiter.version>5.4.0</junit-jupiter.version>
-        <junit-platform.version>1.4.2</junit-platform.version>
+        <junit.version>5.4.0</junit.version>
         <logback-classic.version>1.1.8</logback-classic.version>
         <jackson-databind.version>2.9.8</jackson-databind.version>
 
@@ -59,6 +58,18 @@
         </developerConnection>
     </scm>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -79,13 +90,11 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit-jupiter.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit-jupiter.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
