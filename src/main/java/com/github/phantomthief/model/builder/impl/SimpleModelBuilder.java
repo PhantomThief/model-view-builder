@@ -107,12 +107,12 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
                             .getValue();
                     Set<Object> needToBuildIds = filterIdSetOnBuild(ids, buildContext, valuesMap,
                             valueNamespace);
-                    if (!needToBuildIds.isEmpty()) {
-                        Map<Object, Object> values = valueBuilder.apply(buildContext,
-                                needToBuildIds);
-                        if (values != null) {
-                            valuesMap.merge(valueNamespace, values, MergeUtils::merge);
+                    Map<Object, Object> values = valueBuilder.apply(buildContext, needToBuildIds);
+                    if (values != null) {
+                        if (needToBuildIds.isEmpty() && !values.isEmpty()) {
+                            logger.warn("found illegal build logic for namespace:{}", idNamespace);
                         }
+                        valuesMap.merge(valueNamespace, values, MergeUtils::merge);
                     }
                 }));
     }
