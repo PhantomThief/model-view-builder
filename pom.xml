@@ -52,9 +52,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git@github.com:PhantomThief/model-view-builder.git</connection>
+        <connection>scm:git:git@github.com/PhantomThief/model-view-builder.git</connection>
         <url>https://github.com/PhantomThief/model-view-builder.git</url>
-        <developerConnection>scm:git:git@github.com:PhantomThief/model-view-builder.git
+        <developerConnection>scm:git:git@github.com/PhantomThief/model-view-builder.git
         </developerConnection>
     </scm>
 
