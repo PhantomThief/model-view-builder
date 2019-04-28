@@ -35,10 +35,24 @@ public class SimpleBuildContext implements BuildContext {
     public <K, V> Map<K, V> getData(Object namespace) {
         Function<BuildContext, Map<Object, Object>> lazyBuilder = lazyBuilders.get(namespace);
         if (lazyBuilder != null) {
-            return (Map<K, V>) lazyDatas.computeIfAbsent(namespace, ns -> lazyBuilder.apply(this));
+            return computeIfAbsent(lazyDatas, namespace, ns -> lazyBuilder.apply(this));
         } else {
-            return (Map<K, V>) datas.computeIfAbsent(namespace, ns -> new ConcurrentHashMap<>());
+            return computeIfAbsent(datas, namespace, ns -> new ConcurrentHashMap<>());
         }
+    }
+
+    /**
+     * Workaround to fix ConcurrentHashMap stuck bug when call {@link ConcurrentHashMap#computeIfAbsent} recursively.
+     * see https://bugs.openjdk.java.net/browse/JDK-8062841.
+     */
+    private static <K, V> Map<K, V> computeIfAbsent(ConcurrentMap<Object, Map<Object, Object>> map, Object key,
+                                                    Function<Object, Map<Object, Object>> function) {
+        Map<Object, Object> value = map.get(key);
+        if (value == null) {
+            value = function.apply(key);
+            map.put(key, value);
+        }
+        return (Map<K, V>) value;
     }
 
     public void setupLazyNodeData(Object namespace,
