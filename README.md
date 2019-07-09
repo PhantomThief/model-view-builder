@@ -294,7 +294,7 @@ public static final ViewMapper scan(String pkg, Set<Class<?>> ignoreViews) {
 特定场景下，可能强制覆盖某些Model到View的映射关系，比如正常场景下，User对象会映射成UserView，但是在某个场景下，User对象需要映射到UserCustomizeView，这时候可以使用临时的View映射定制：
 ```Java
 ViewMapper defaultViewMapper = getDefaultViewMapper();
-OverrideViewMapper overrideViewMapper = new OverrideViewMapper<>(defaultViewMapper) //
+OverrideViewMapper overrideViewMapper = new OverrideViewMapper<>(defaultViewMapper)
 	.addMapper(User.class, (user, buildContext) -> new UserCustmoizeView(user));
 
 List<View> views = overrideViewMapper.map(userList);

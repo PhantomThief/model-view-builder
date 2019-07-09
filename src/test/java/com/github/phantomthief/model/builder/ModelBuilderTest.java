@@ -49,36 +49,36 @@ class ModelBuilderTest {
     @BeforeEach
     void setup() {
         testDAO = new TestDAO();
-        builder = new SimpleModelBuilder<TestBuildContext>() //
-                .self(User.class, User::getId) //
-                .self(Post.class, Post::getId) //
-                .self(Comment.class, Comment::getId) //
-                .on(Comment.class).id(Comment::getAtUserIds).to(User.class) //
-                .on(HasUser.class).id(HasUser::getUserId).to(User.class) //
-                .on(Post.class).value(Post::comments, Comment::getId).to(Comment.class) //
-                .build(User.class, testDAO::getUsers).build(Post.class, testDAO::getPosts) //
-                .build(Comment.class, testDAO::getComments).build(User.class) //
+        builder = new SimpleModelBuilder<TestBuildContext>()
+                .self(User.class, User::getId)
+                .self(Post.class, Post::getId)
+                .self(Comment.class, Comment::getId)
+                .on(Comment.class).id(Comment::getAtUserIds).to(User.class)
+                .on(HasUser.class).id(HasUser::getUserId).to(User.class)
+                .on(Post.class).value(Post::comments, Comment::getId).to(Comment.class)
+                .build(User.class, testDAO::getUsers).build(Post.class, testDAO::getPosts)
+                .build(Comment.class, testDAO::getComments).build(User.class)
                 .by((TestBuildContext context, Collection<Integer> ids) -> testDAO
                         .isFollowing(context.getVisitorId(), ids))
-                .to("isFollowing") //
+                .to("isFollowing")
                 .lazy(on(User.class,
                         (TestBuildContext context, Collection<Integer> ids) -> testDAO
                                 .isFans(context.getVisitorId(), ids),
-                        "isFans")) //
+                        "isFans"))
                 .lazyBuild(User.class, (TestBuildContext context, Collection<Integer> ids) -> {
                     Map<Integer, Boolean> fans = testDAO.isFans(context.getVisitorId(), ids);
                     logger.debug("build fans for:{}->{}, result:{}", context.getVisitorId(), ids,
                             fans);
                     return fans;
-                }, "isFans3") //
+                }, "isFans3")
                 .lazy(on(Fake.class,
                         (TestBuildContext context, Collection<Integer> ids) -> testDAO
                                 .isFans(context.getVisitorId(), ids),
-                        "unreachedLazy")) //
+                        "unreachedLazy"))
                 .lazy(on(Fake.class, (TestBuildContext context, Collection<Integer> ids) -> {
                     context.getData("unreachedLazy");
                     return testDAO.isFans(context.getVisitorId(), ids);
-                }, "unreachedLazy2")) //
+                }, "unreachedLazy2"))
         ;
         System.out.println("builder===>");
         System.out.println(builder);
@@ -225,14 +225,14 @@ class ModelBuilderTest {
 
         private static final int USER_MAX = 100;
         private final Map<Long, Post> posts = ImmutableList
-                .of(new Post(1, 1, null), //
-                        new Post(2, 1, Arrays.asList(1L, 2L, 3L)), //
+                .of(new Post(1, 1, null),
+                        new Post(2, 1, Arrays.asList(1L, 2L, 3L)),
                         new Post(3, 2, Arrays.asList(4L, 5L)))
                 .stream().collect(toMap(Post::getId, identity()));
 
         private final Map<Long, Comment> cmts = ImmutableList
-                .of(new Comment(1, 1, null), new Comment(2, 2, null), new Comment(3, 1, null), //
-                        new Comment(4, 2, Arrays.asList(2, 3)), //
+                .of(new Comment(1, 1, null), new Comment(2, 2, null), new Comment(3, 1, null),
+                        new Comment(4, 2, Arrays.asList(2, 3)),
                         new Comment(5, 11, Arrays.asList(2, 99)))
                 .stream().collect(toMap(Comment::getId, identity()));
 
