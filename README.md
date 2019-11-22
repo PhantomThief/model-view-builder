@@ -1,4 +1,4 @@
-model-view-builder [![Build Status](https://travis-ci.org/PhantomThief/model-view-builder.svg)](https://travis-ci.org/PhantomThief/model-view-builder) [![Coverage Status](https://coveralls.io/repos/PhantomThief/model-view-builder/badge.svg?branch=master&service=github)](https://coveralls.io/github/PhantomThief/model-view-builder?branch=master)
+model-view-builder [![Build Status](https://travis-ci.org/PhantomThief/model-view-builder.svg)](https://travis-ci.org/PhantomThief/model-view-builder) [![Coverage Status](https://coveralls.io/repos/PhantomThief/model-view-builder/badge.svg?branch=master&service=github)](https://coveralls.io/github/PhantomThief/model-view-builder?branch=master) [![Total alerts](https://img.shields.io/lgtm/alerts/g/PhantomThief/model-view-builder.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/PhantomThief/model-view-builder/alerts/) [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/PhantomThief/model-view-builder.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/PhantomThief/model-view-builder/context:java) [![Maven Central](https://img.shields.io/maven-central/v/com.github.phantomthief/model-view-builder)](https://search.maven.org/artifact/com.github.phantomthief/model-view-builder/)
 =======================
 
 对象依赖构建以及model到view的映射
@@ -56,16 +56,6 @@ public Map<Integer, Boolean> isUserFollowingUsers(int userId, Collection<Integer
 这样构建代码可能就会是一些硬编码的foreach循环搜集id，然后再调用接口构建，而且可复用程度不高。
 
 本项目就是提供一个解决这样场景的方案。
-
-## 基本使用
-
-```xml
-<dependency>
-    <groupId>com.github.phantomthief</groupId>
-	<artifactId>model-view-builder</artifactId>
-    <version>1.1.1</version>
-</dependency>
-```
 
 ### ModelBuilder的使用：
 
