@@ -163,14 +163,14 @@ class ModelBuilderTest {
         builder.buildMulti(users, buildContext);
         Map<Integer, Boolean> isFans = buildContext.getData("isFans3");
         System.out.println("isFans:" + isFans);
-        users.forEach(user -> assertTrue(isFans.get(user.getId()) != null));
+        users.forEach(user -> assertNotNull(isFans.get(user.getId())));
 
         TestBuildContext other = new TestBuildContext(1);
         List<User> users2 = new ArrayList<>(testDAO.getUsers(ImmutableList.of(3, 4, 5)).values());
         builder.buildMulti(users2, other);
         Map<Integer, Boolean> isFans2 = other.getData("isFans3");
         System.out.println("isFans2:" + isFans2);
-        users2.forEach(user -> assertTrue(isFans2.get(user.getId()) != null));
+        users2.forEach(user -> assertNotNull(isFans2.get(user.getId())));
 
         buildContext.merge(other);
         System.out.println("after merged.");
@@ -179,7 +179,7 @@ class ModelBuilderTest {
         Map<Integer, Boolean> merged = buildContext.getData("isFans3");
         System.out.println("merged:" + merged);
         for (int i = 1; i <= 5; i++) {
-            assertTrue(merged.get(i) != null);
+            assertNotNull(merged.get(i));
         }
         System.out.println("fin.");
     }
@@ -197,13 +197,13 @@ class ModelBuilderTest {
         builder.buildMulti(byIdsFailFast.values(), buildContext2);
         Map<Integer, Boolean> isFans3 = buildContext2.getData("isFans3");
         System.out.println("[test] " + isFans3);
-        assertTrue(!isFans3.isEmpty());
+        assertFalse(isFans3.isEmpty());
 
         mainBuildContext.merge(buildContext2);
 
         isFans3 = mainBuildContext.getData("isFans3");
         System.out.println("[test] " + isFans3);
-        assertTrue(!isFans3.isEmpty());
+        assertFalse(isFans3.isEmpty());
     }
 
     private void assertUser(TestBuildContext buildContext, User user) {
