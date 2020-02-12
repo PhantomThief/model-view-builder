@@ -14,7 +14,7 @@
         <commons-lang3.version>3.4</commons-lang3.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
 
-        <junit.version>5.5.2</junit.version>
+        <junit.version>5.6.0</junit.version>
         <logback-classic.version>1.1.8</logback-classic.version>
         <jackson-databind.version>2.9.10.1</jackson-databind.version>
 
