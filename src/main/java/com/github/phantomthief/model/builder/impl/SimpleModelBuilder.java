@@ -52,8 +52,11 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Set<Object>>>>> cachedIdExtractors = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Map<Object, Object>>>>> cachedValueExtractors = new ConcurrentHashMap<>();
 
+    private volatile boolean alreadyBuilt = false;
+
     @Override
     public void buildMulti(Iterable<?> sources, B buildContext) {
+        alreadyBuilt = true;
         if (sources == null) {
             return;
         }
@@ -249,6 +252,9 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     @SuppressWarnings("rawtypes")
     @Deprecated
     public SimpleModelBuilder<B> lazy(Lazy lazy) {
+        if (alreadyBuilt) { // TODO 其它几个 extractor 理论上也有一样的问题
+            logger.warn("found lazy init after build, Lazy:{}", lazy, new RuntimeException());
+        }
         lazyBuilders.put(lazy.targetNamespace(), buildContext -> (Map) ((BiFunction) lazy.builder())
                 .apply(buildContext, buildContext.getData(lazy.sourceNamespace()).keySet()));
         return this;
