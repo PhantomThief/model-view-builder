@@ -53,6 +53,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     private final ConcurrentMap<Class<?>, Set<Function<Object, KeyPair<Map<Object, Object>>>>> cachedValueExtractors = new ConcurrentHashMap<>();
 
     private volatile boolean alreadyBuilt = false;
+    private Runnable onConflictListener;
 
     @Override
     public void buildMulti(Iterable<?> sources, B buildContext) {
@@ -87,6 +88,11 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             }
             pendingForBuilding = newPendingForBuilding;
         }
+    }
+
+    public SimpleModelBuilder<B> onConflictCheckListener(Runnable listener) {
+        onConflictListener = listener;
+        return this;
     }
 
     private void mergeToBuildContext(Map<Object, Map<Object, Object>> valuesMap, B buildContext) {
@@ -252,12 +258,16 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
     @SuppressWarnings("rawtypes")
     @Deprecated
     public SimpleModelBuilder<B> lazy(Lazy lazy) {
-        if (alreadyBuilt) { // TODO 其它几个 extractor 理论上也有一样的问题
-            logger.warn("found lazy init after build, Lazy:{}", lazy, new RuntimeException());
-        }
+        tryCheckConflict();
         lazyBuilders.put(lazy.targetNamespace(), buildContext -> (Map) ((BiFunction) lazy.builder())
                 .apply(buildContext, buildContext.getData(lazy.sourceNamespace()).keySet()));
         return this;
+    }
+
+    private void tryCheckConflict() {
+        if (alreadyBuilt && onConflictListener != null) {
+            onConflictListener.run();
+        }
     }
 
     public <E> SimpleModelBuilder<B> valueFromSelf(Class<E> type, Function<E, Object> idExtractor) {
@@ -399,6 +409,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             }
 
             public SimpleModelBuilder<B> to(Object valueNamespace) {
+                tryCheckConflict();
                 valueExtractors.put(objType, obj -> {
                     Object rawValue = valueExtractor.apply((E) obj);
                     Map<Object, Object> value;
@@ -443,6 +454,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
             }
 
             public SimpleModelBuilder<B> to(Object idNamespace) {
+                tryCheckConflict();
                 idExtractors.put(objType, obj -> {
                     Object rawId = idExtractor.apply((E) obj);
                     Set<Object> ids;
@@ -493,6 +505,7 @@ public class SimpleModelBuilder<B extends BuildContext> implements ModelBuilder<
 
             @SuppressWarnings("rawtypes")
             public SimpleModelBuilder<B> to(Object valueNamespace) {
+                tryCheckConflict();
                 valueBuilders.put(idNamespace, new KeyPair(valueNamespace, valueBuilderFunction));
                 return SimpleModelBuilder.this;
             }
